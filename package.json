@@ -1,0 +1,15 @@
+{
+  "name": "oaks-post",
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "description": "A pure ES module runs on Node.js and focus on blog posts batched processing.",
+  "scripts": {
+    "test": "node --experimental-modules index.test.mjs"
+  },
+  "author": "Neil Ji",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "murmurhash": "^2.0.1"
+  }
+}
