@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import { strict as assert } from "assert";
-import processMarkdownFiles from "./index.mjs";
+import { processMarkdownFiles } from "./index.mjs";
 
 const testProcessMarkdownFiles = async () => {
   // Define your test directories and files
@@ -51,6 +51,7 @@ const testProcessMarkdownFiles = async () => {
   // Clean up: remove test directories and files
   await fs.rm(testMarkdownDirectory, { recursive: true });
   await fs.rm(testOutputDirectory, { recursive: true });
+  console.log("Cases are all passed.");
 };
 
 // Run the test
