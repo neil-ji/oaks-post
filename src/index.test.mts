@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import { strict as assert } from "assert";
-import { processMarkdownFiles } from "./index.mjs";
+import { MarkdownProcessorManager } from "./index.mjs";
 
 const testProcessMarkdownFiles = async () => {
   // Define your test directories and files
@@ -17,7 +17,11 @@ const testProcessMarkdownFiles = async () => {
   await fs.writeFile(`${testMarkdownDirectory}/testFile.md`, markdownContent);
 
   // Run the function to be tested
-  await processMarkdownFiles(testMarkdownDirectory, testOutputDirectory);
+  const processorManager = new MarkdownProcessorManager();
+  await processorManager.processFiles(
+    testMarkdownDirectory,
+    testOutputDirectory
+  );
 
   // Check if the JSON file was generated
   const jsonFilePath = `${testOutputDirectory}/testFile.json`;
@@ -36,7 +40,10 @@ const testProcessMarkdownFiles = async () => {
   );
 
   // Run the function again after modification
-  await processMarkdownFiles(testMarkdownDirectory, testOutputDirectory);
+  await processorManager.processFiles(
+    testMarkdownDirectory,
+    testOutputDirectory
+  );
 
   // Check if the JSON file was regenerated
   jsonFileExists = await fs
