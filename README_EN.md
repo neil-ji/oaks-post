@@ -7,8 +7,9 @@ A pure ES module runs on Node.js and focus on blog posts batched processing.
 
 # Features
 
-- analyze Front Matter and content of markdown files and extract them into json;
-- insert hash of content into Front Matter;
+- Analyzing the Front Matter and content of markdown files and extract them into json;
+- Inserting hash of content into Front Matter;
+- Fully supporting for Typescript types declaration;
 
 # Install
 
