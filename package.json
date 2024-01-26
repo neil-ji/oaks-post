@@ -4,11 +4,15 @@
   "main": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "type": "module",
-  "repository": "https://github.com/neil-ji/oaks-post",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neil-ji/oaks-post.git"
+  },
   "description": "A pure ES module runs on Node.js and focus on blog posts batched processing.",
   "scripts": {
     "build": "tsc",
-    "test": "node --experimental-modules dist/index.test.mjs"
+    "test": "node --experimental-modules dist/index.test.mjs",
+    "publish:npm": "npm run build && npm run test && npm publish"
   },
   "author": "Neil Ji",
   "license": "Apache-2.0",
