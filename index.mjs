@@ -1,5 +1,3 @@
-// markdownProcessor.mjs
-
 import fs from "fs/promises";
 import { createReadStream, createWriteStream } from "fs";
 import murmurhash from "murmurhash";
