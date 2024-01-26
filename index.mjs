@@ -12,7 +12,6 @@ const calculateHash = (content) => {
 const processMarkdownFile = async (inputFilePath, outputJsonFilePath) => {
   try {
     const readStream = createReadStream(inputFilePath, "utf-8");
-    const writeStreamJson = createWriteStream(outputJsonFilePath, "utf-8");
     const chunks = [];
 
     // Read file content
@@ -42,6 +41,7 @@ const processMarkdownFile = async (inputFilePath, outputJsonFilePath) => {
 
       // Use asynchronous stream for writing JSON file
       const jsonString = JSON.stringify(jsonData, null, 2);
+      const writeStreamJson = createWriteStream(outputJsonFilePath, "utf-8");
       await pipeline(jsonString, writeStreamJson);
 
       // Update Markdown file with currentContentHash
