@@ -4,6 +4,7 @@
   "main": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "type": "module",
+  "repository": "https://github.com/neil-ji/oaks-post",
   "description": "A pure ES module runs on Node.js and focus on blog posts batched processing.",
   "scripts": {
     "build": "tsc",
@@ -17,5 +18,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.7"
-  }
+  },
+  "keywords": [
+    "blog",
+    "posts",
+    "markdown2json",
+    "front matter",
+    "markdown"
+  ]
 }
