@@ -1,2 +1,4 @@
 *.test.mjs
 dist/index.test.*
+src
+tsconfig.json
