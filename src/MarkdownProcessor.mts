@@ -1,9 +1,37 @@
 import { createReadStream, createWriteStream } from "fs";
-import murmurhash from "murmurhash";
+import fs from "fs/promises";
 import grayMatter from "gray-matter";
+import murmurhash from "murmurhash";
 import { pipeline } from "stream/promises";
 
 export class MarkdownProcessor {
+  private processedFileHashSet: Set<string>;
+
+  constructor() {
+    this.processedFileHashSet = new Set();
+  }
+
+  private extractHashFromJsonFileName(
+    jsonFileName: string
+  ): string | undefined {
+    const match = jsonFileName.match(/post_(\w+).json/);
+    return match ? match[1] : undefined;
+  }
+
+  private async initProcessedFilesHashSet(outputDirectory: string) {
+    try {
+      const lastJsonFiles = await fs.readdir(outputDirectory);
+      for (const fileName of lastJsonFiles) {
+        const hash = this.extractHashFromJsonFileName(fileName);
+        if (hash) {
+          this.processedFileHashSet.add(hash);
+        }
+      }
+    } catch (error) {
+      console.error("Error reading json files:", error);
+    }
+  }
+
   private calculateHash(content: string) {
     const hash = murmurhash.v3(content);
     return hash.toString(16);
@@ -21,65 +49,45 @@ export class MarkdownProcessor {
     return chunks.join("");
   }
 
-  private async generateJsonContent(
-    inputFilePath: string,
-    fileContent: string
-  ): Promise<string> {
-    const { data: frontMatter, content } = grayMatter(fileContent);
-
-    // Get last hash value, default to an empty string if it doesn't exist
-    const lastContentHash = frontMatter.contentHash || "";
-
-    // Calculate current file content hash value
-    const currentContentHash = this.calculateHash(content);
-
-    // Only regenerate the JSON file if the hash values are different
-    if (currentContentHash !== lastContentHash) {
-      // Add hash value to frontMatter
-      frontMatter.contentHash = currentContentHash;
-
-      // Generate JSON content
-      const jsonData = {
-        frontMatter,
-        content,
-      };
-
-      return JSON.stringify(jsonData, null, 2);
-    } else {
-      console.log(`${inputFilePath} has not changed. Skipping...`);
-      return "";
-    }
-  }
-
-  private async writeToFile(content: string, filePath: string) {
-    const writeStream = createWriteStream(filePath, "utf-8");
-    await pipeline(content, writeStream);
-  }
-
-  public async processFile(
-    inputFilePath: string,
-    outputJsonFilePath: string
-  ) {
+  private async processFile(inputFilePath: string, outputDirectory: string) {
     try {
       const fileContent = await this.readFileContent(inputFilePath);
-      const jsonContent = await this.generateJsonContent(
-        inputFilePath,
-        fileContent
-      );
+      // blending fileContent and inputFilePath to ensure that files are processed which has different filenames but same content.
+      const fileContentHash = this.calculateHash(fileContent + inputFilePath);
 
-      if (jsonContent) {
-        await this.writeToFile(jsonContent, outputJsonFilePath);
-
-        // Update Markdown file with currentContentHash
-        const updatedFileContent = grayMatter.stringify(
-          fileContent,
-          JSON.parse(jsonContent).frontMatter
-        );
-        await this.writeToFile(updatedFileContent, inputFilePath);
+      if (this.processedFileHashSet.has(fileContentHash)) {
+        console.log(`${inputFilePath} has not changed. Skipping...`);
+        return;
       }
+
+      const jsonContent = JSON.stringify(grayMatter(fileContent), null, 2);
+      const outputJsonFilePath = `${outputDirectory}/post_${fileContentHash}.json`;
+
+      const writeStream = createWriteStream(outputJsonFilePath, "utf-8");
+      await pipeline(jsonContent, writeStream);
     } catch (error) {
       console.error(`Error processing file: ${inputFilePath}`);
       console.error(error);
+    }
+  }
+
+  public async processFiles(
+    markdownDirectory: string,
+    outputDirectory: string
+  ) {
+    // extract hash segment from last processed json files' names.
+    this.initProcessedFilesHashSet(outputDirectory);
+
+    // start process markdown files.
+    try {
+      const markdownFiles = await fs.readdir(markdownDirectory);
+
+      for (const fileName of markdownFiles) {
+        const inputFilePath = `${markdownDirectory}/${fileName}`;
+        await this.processFile(inputFilePath, outputDirectory);
+      }
+    } catch (error) {
+      console.error("Error reading markdown files:", error);
     }
   }
 }

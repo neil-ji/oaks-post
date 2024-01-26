@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import { strict as assert } from "assert";
-import { MarkdownProcessorManager } from "./index.mjs";
+import { MarkdownProcessor } from "./index.mjs";
 
 const testProcessMarkdownFiles = async () => {
   // Define your test directories and files
@@ -17,19 +17,26 @@ const testProcessMarkdownFiles = async () => {
   await fs.writeFile(`${testMarkdownDirectory}/testFile.md`, markdownContent);
 
   // Run the function to be tested
-  const processorManager = new MarkdownProcessorManager();
-  await processorManager.processFiles(
+  const markdownProcessor = new MarkdownProcessor();
+  await markdownProcessor.processFiles(
     testMarkdownDirectory,
     testOutputDirectory
   );
 
   // Check if the JSON file was generated
-  const jsonFilePath = `${testOutputDirectory}/testFile.json`;
-  let jsonFileExists = await fs
-    .access(jsonFilePath)
-    .then(() => true)
-    .catch(() => false);
-  assert.ok(jsonFileExists, "JSON file was not generated.");
+
+  const files = await fs.readdir(testOutputDirectory);
+  const regExp = /post_\w+/;
+  for (const file of files) {
+    assert.ok(regExp.test(file), "JSON file name was wrong.");
+
+    const jsonFilePath = `${testOutputDirectory}/${file}`;
+    const jsonFileExists = await fs
+      .access(jsonFilePath)
+      .then(() => true)
+      .catch(() => false);
+    assert.ok(jsonFileExists, `JSON file ${jsonFilePath} was not generated.`);
+  }
 
   // Simulate modifying the markdown file
   const modifiedMarkdownContent =
@@ -40,20 +47,25 @@ const testProcessMarkdownFiles = async () => {
   );
 
   // Run the function again after modification
-  await processorManager.processFiles(
+  await markdownProcessor.processFiles(
     testMarkdownDirectory,
     testOutputDirectory
   );
 
   // Check if the JSON file was regenerated
-  jsonFileExists = await fs
-    .access(jsonFilePath)
-    .then(() => true)
-    .catch(() => false);
-  assert.ok(
-    jsonFileExists,
-    "Regenerated JSON file was not generated after modification."
-  );
+  for (const file of files) {
+    assert.ok(regExp.test(file), "JSON file name was wrong.");
+
+    const jsonFilePath = `${testOutputDirectory}/${file}`;
+    const jsonFileExists = await fs
+      .access(jsonFilePath)
+      .then(() => true)
+      .catch(() => false);
+    assert.ok(
+      jsonFileExists,
+      `Regenerated JSON file ${jsonFilePath} was not generated after modification.`
+    );
+  }
 
   // Clean up: remove test directories and files
   await fs.rm(testMarkdownDirectory, { recursive: true });

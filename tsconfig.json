@@ -10,7 +10,8 @@
     "outDir": "dist",
     "removeComments": true,
     "declarationDir": "dist",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "listEmittedFiles": true
   },
   "include": ["src"]
 }
