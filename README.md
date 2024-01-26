@@ -21,7 +21,7 @@ npm install oaks-post
 调用如下：
 
 ```js
-import convert from "oaks-post";
+import { processMarkdownFiles } from "oaks-post";
 import { join } from "path";
 
 const prefix = process.cwd();
@@ -29,7 +29,7 @@ const prefix = process.cwd();
 const input = join(prefix, "your markdown directory");
 const output = join(prefix, "your json directory");
 
-convert(input, output);
+processMarkdownFiles(input, output);
 ```
 
 举个例子，如下 markdown 文件：

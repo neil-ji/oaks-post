@@ -1,6 +1,4 @@
-type ProcessMarkdownFile = (
+export declare function processMarkdownFiles(
   inputDirectory?: string,
   outputDirectory?: string
-) => Promise<void>;
-
-export default ProcessMarkdownFile;
+): Promise<void>;

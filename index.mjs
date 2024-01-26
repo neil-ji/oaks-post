@@ -74,4 +74,4 @@ const processMarkdownFiles = async (markdownDirectory, outputDirectory) => {
   }
 };
 
-export default processMarkdownFiles;
+export { processMarkdownFiles };
