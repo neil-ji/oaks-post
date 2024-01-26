@@ -19,9 +19,15 @@ npm install oaks-post
 # Usage
 
 ```js
-import processMarkdownFiles from "oaks-post";
+import convert from "oaks-post";
+import { join } from "path";
 
-processMarkdownFiles("markdown input directory", "json output directory");
+const prefix = process.cwd();
+
+const input = join(prefix, "your markdown directory");
+const output = join(prefix, "your json directory");
+
+convert(input, output);
 ```
 
 For example, such markdown file as bellow:
