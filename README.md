@@ -9,7 +9,7 @@
 
 - 解析 Markdown 文件的 Front Matter 和内容两部分，然后把它们提取到一个同名 json 文件中；
 - 计算 Markdown 内容部分的 Hash 值，并写入 Front Matter；
-- 完整的Typescript类型定义，良好的代码提示；
+- 完整的 Typescript 类型定义，良好的代码提示；
 
 # 安装
 
