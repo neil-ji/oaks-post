@@ -4,12 +4,15 @@ import murmurhash from "murmurhash";
 import grayMatter from "gray-matter";
 import { pipeline } from "stream/promises";
 
-const calculateHash = (content) => {
+const calculateHash = (content: string) => {
   const hash = murmurhash.v3(content);
   return hash.toString(16);
 };
 
-const processMarkdownFile = async (inputFilePath, outputJsonFilePath) => {
+const processMarkdownFile = async (
+  inputFilePath: string,
+  outputJsonFilePath: string
+) => {
   try {
     const readStream = createReadStream(inputFilePath, "utf-8");
     const chunks = [];
@@ -57,7 +60,10 @@ const processMarkdownFile = async (inputFilePath, outputJsonFilePath) => {
   }
 };
 
-const processMarkdownFiles = async (markdownDirectory, outputDirectory) => {
+const processMarkdownFiles = async (
+  markdownDirectory: string,
+  outputDirectory: string
+) => {
   try {
     const markdownFiles = await fs.readdir(markdownDirectory);
 

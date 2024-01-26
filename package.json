@@ -1,17 +1,21 @@
 {
   "name": "oaks-post",
   "version": "1.1.1",
-  "main": "index.mjs",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "type": "module",
-  "types": "index.d.ts",
   "description": "A pure ES module runs on Node.js and focus on blog posts batched processing.",
   "scripts": {
-    "test": "node --experimental-modules index.test.mjs"
+    "build": "tsc",
+    "test": "node --experimental-modules dist/index.test.mjs"
   },
   "author": "Neil Ji",
   "license": "Apache-2.0",
   "dependencies": {
     "gray-matter": "^4.0.3",
     "murmurhash": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.7"
   }
 }
