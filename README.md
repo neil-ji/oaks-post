@@ -13,9 +13,11 @@
 
 # 功能
 
-- 解析 Markdown 文件的 Front Matter 和内容两部分，然后把它们提取到一个 json 文件中；
+- 解析 Markdown 文件的 Front Matter 和内容两部分，计算 HASH 值，然后把它们提取到`post_[hash].json`中（比如`post_c1ae890.json`）；
+- 第一次执行后，后续再次生成 `post_[hash].json` 前会比对 HASH 值，跳过已处理过的文章；
+- 自动生成一个类似数据库表的`posts.json`，可用于对文章的遍历；
+- 自动生成 json 文件的 URL，同样存储在`posts.json`中；
 - 完整的 Typescript 类型定义，良好的代码提示；
-- 多次批处理时，会自动跳过已处理过的文章；
 
 # 安装
 
@@ -28,32 +30,36 @@ npm install oaks-post
 调用如下：
 
 ```js
-import { MarkdownProcessor } from "oaks-post";
+import { PostsProcessor } from "oaks-post";
 import { join } from "path";
 
 const base = process.cwd();
 
-const input = join(base, "your markdown directory");
-const output = join(base, "your json directory");
+const markdownDirectory = join(base, "your markdown directory");
+const jsonDirectory = join(base, "your json directory");
 
-const markdownProcessor = new MarkdownProcessor();
-markdownProcessor.processFiles(input, output);
+const posts = new PostsProcessor({
+  markdownDirectory,
+  jsonDirectory,
+});
+posts.processFiles();
 ```
 
-举个例子，如下 markdown 文件：
+举例如下，markdown 文件像这样：
 
 ```markdown
 ---
 title: Hello world
-contentHash: da3ab45e
 ---
 
 hello world
 ```
 
-所生成的对应 json 文件如下：
+所生成的对应 JSON 文件如下：
 
 ```json
+// post_44a474ca.json
+
 {
   "frontMatter": {
     "title": "Hello world",
@@ -62,3 +68,41 @@ hello world
   "content": "hello world"
 }
 ```
+
+```json
+// posts.json
+
+{
+  "buildTime": "2024-01-27T09:15:01.981Z",
+  "posts": [
+    {
+      "url": "your_baseUrl/your_json_directory/post_44a474ca.json",
+      "hash": "44a474ca",
+      "frontMatter": {
+        "title": "Hello world"
+      },
+      "content": "hello world"
+    }
+  ]
+}
+```
+
+# 配置参数
+
+你可以传入一个对象以控制 PostsProcessor 的部分行为，该对象的 TS 类型定义如下：
+
+```ts
+interface PostsProcessorOptions {
+  baseUrl?: string;
+  markdownDirectory: string;
+  jsonDirectory: string;
+  descendByDate?: boolean;
+}
+```
+
+以下为各字段含义：
+
+- `markdownDirectory: string`: **Required**; Can be passed a relative or absolute path. Relative paths will be resolved by default relative to `process.cwd()`, representing the directory where your markdown files are located.
+- `jsonDirectory: string`: **Required**; Resolution rules are the same as `markdownDirectory`. It represents the directory where the JSON files output by `oaks-post` will be stored.
+- `baseUrl?: string`: **Optional**; Default is an empty string `""`. It will serve as the URL prefix for each post in the `posts.json`.
+- `descendByDate?: boolean`: **Optional**; Default is `false`. It determines the order of the posts array in `posts.json`.

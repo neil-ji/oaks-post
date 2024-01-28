@@ -2,3 +2,4 @@
 dist/index.test.*
 src
 tsconfig.json
+/test_*
