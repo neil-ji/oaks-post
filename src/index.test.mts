@@ -7,6 +7,7 @@ const jsonDirectory = path.join(process.cwd(), "test_json");
 
 // Run the function to be tested
 const markdownProcessor = new PostsProcessor({
+  baseUrl: "https://neil-ji.github.io/",
   markdownDirectory,
   jsonDirectory,
   descendByDate: true,

@@ -1,7 +1,8 @@
-import { createReadStream, createWriteStream } from "fs";
+import { createWriteStream } from "fs";
 import fs from "fs/promises";
 import grayMatter from "gray-matter";
 import murmurhash from "murmurhash";
+import { join } from "path";
 import { pipeline } from "stream/promises";
 import { PostsCollection } from "./PostsCollection.mjs";
 import { getFileContent, getRelativePath, getUrlPath } from "./utils.mjs";
@@ -37,7 +38,7 @@ export class PostsProcessor {
       for (const jsonName of lastJsonFiles) {
         const hash = this.extractHashFromJsonFileName(jsonName);
         if (hash) {
-          this.existedJsonPathMap.set(hash, `${outputDirectory}/${jsonName}`);
+          this.existedJsonPathMap.set(hash, join(outputDirectory, jsonName));
         }
       }
     } catch (error) {
@@ -68,13 +69,13 @@ export class PostsProcessor {
       const { data: frontMatter, content } = grayMatter(markdownContent);
       const jsonContent = JSON.stringify({ frontMatter, content }, null, 0);
       const jsonFilename = `post_${markdownHash}.json`;
-      const jsonPath = `${jsonDirectory}/${jsonFilename}`;
+      const jsonPath = join(jsonDirectory, jsonFilename);
       const writeStream = createWriteStream(jsonPath, "utf-8");
       await pipeline(jsonContent, writeStream);
 
       // 3. Collect data of json file.
       this.collection.collect({
-        url: `${this.options.baseUrl}/${getUrlPath(getRelativePath(jsonPath))}`,
+        url: getUrlPath(join(this.options.baseUrl!, getRelativePath(jsonPath))),
         hash: markdownHash,
         frontMatter,
         content,
@@ -96,7 +97,7 @@ export class PostsProcessor {
     try {
       const markdownFiles = await fs.readdir(markdownDirectory);
       const processHandlers = markdownFiles.map(async (markdownFilename) => {
-        const markdownPath = `${markdownDirectory}/${markdownFilename}`;
+        const markdownPath = join(markdownDirectory, markdownFilename);
         return this.processFile(markdownPath, jsonDirectory);
       });
       await Promise.all(processHandlers);
