@@ -5,7 +5,12 @@ import murmurhash from "murmurhash";
 import { join } from "path";
 import { pipeline } from "stream/promises";
 import { PostsCollection } from "./PostsCollection.mjs";
-import { getFileContent, getRelativePath, getUrlPath } from "./utils.mjs";
+import {
+  getFileContent,
+  getRelativePath,
+  getUrlPath,
+  normalizePath,
+} from "./utils.mjs";
 
 export interface PostsProcessorOptions {
   baseUrl?: string;
@@ -17,12 +22,21 @@ export interface PostsProcessorOptions {
 export class PostsProcessor {
   private existedJsonPathMap: Map<string, string>;
   private collection: PostsCollection;
-  private options: PostsProcessorOptions;
+  private options: Required<Omit<PostsProcessorOptions, "descendByDate">>;
 
-  constructor(options: PostsProcessorOptions) {
+  constructor({
+    descendByDate,
+    baseUrl,
+    markdownDirectory,
+    jsonDirectory,
+  }: PostsProcessorOptions) {
     this.existedJsonPathMap = new Map();
-    this.collection = new PostsCollection(options.descendByDate);
-    this.options = { ...options, baseUrl: options.baseUrl || "" };
+    this.collection = new PostsCollection(descendByDate);
+    this.options = {
+      baseUrl: baseUrl || "",
+      markdownDirectory: normalizePath(markdownDirectory),
+      jsonDirectory: normalizePath(jsonDirectory),
+    };
   }
 
   private extractHashFromJsonFileName(
@@ -75,7 +89,7 @@ export class PostsProcessor {
 
       // 3. Collect data of json file.
       this.collection.collect({
-        url: getUrlPath(join(this.options.baseUrl!, getRelativePath(jsonPath))),
+        url: getUrlPath(join(this.options.baseUrl, getRelativePath(jsonPath))),
         hash: markdownHash,
         frontMatter,
         content,
