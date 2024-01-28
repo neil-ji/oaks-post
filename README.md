@@ -102,7 +102,7 @@ interface PostsProcessorOptions {
 
 以下为各字段含义：
 
-- `markdownDirectory: string`: **Required**; Can be passed a relative or absolute path. Relative paths will be resolved by default relative to `process.cwd()`, representing the directory where your markdown files are located.
-- `jsonDirectory: string`: **Required**; Resolution rules are the same as `markdownDirectory`. It represents the directory where the JSON files output by `oaks-post` will be stored.
-- `baseUrl?: string`: **Optional**; Default is an empty string `""`. It will serve as the URL prefix for each post in the `posts.json`.
-- `descendByDate?: boolean`: **Optional**; Default is `false`. It determines the order of the posts array in `posts.json`.
+- `markdownDirectory: string;`必填，可传入相对或绝对路径，解析相对路径将默认以`process.cwd()`为参照物，它代表你的 markdown 文件所在目录。
+- `jsonDirectory: string;`必填，解析规则同`markdownDirectory`，它代表`oaks-post`输出的 json 文件的存放目录。
+- `baseUrl?: string;` 可选，默认为空字符串`""`，它将作为 posts.json 中各 post 的 url 前缀。
+- `descendByDate?: boolean;`可选，默认为`false`，它决定了`posts.json`中 posts 数组的排列顺序；
