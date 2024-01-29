@@ -81,7 +81,7 @@ hello world
       "frontMatter": {
         "title": "Hello world"
       },
-      "content": "hello world"
+      "excerpt": "hello world"
     }
   ]
 }
@@ -97,12 +97,30 @@ interface PostsProcessorOptions {
   markdownDirectory: string;
   jsonDirectory: string;
   descending?: boolean;
+  excerptOptions?: PostsExcerptOptions;
+}
+
+interface PostsExcerptOptions {
+  rule: PostsExcerptRule;
+  lines?: number;
+  tag?: string;
+}
+
+enum PostsExcerptRule {
+  ByLines = 1,
+  CustomTag = 2,
 }
 ```
 
 以下为各字段含义：
 
-- `markdownDirectory: string;`必填，可传入相对或绝对路径，解析相对路径将默认以`process.cwd()`为参照物，它代表你的 markdown 文件所在目录。
-- `jsonDirectory: string;`必填，解析规则同`markdownDirectory`，它代表`oaks-post`输出的 json 文件的存放目录。
-- `baseUrl?: string;` 可选，默认为空字符串`""`，它将作为 posts.json 中各 post 的 url 前缀。
-- `descending?: boolean;`可选，默认为`false`，它决定了`posts.json`中 posts 数组的排列顺序；
+- `markdownDirectory: string`必填，可传入相对或绝对路径，解析相对路径将默认以`process.cwd()`为参照物，它代表你的 markdown 文件所在目录。
+- `jsonDirectory: string`：必填，解析规则同`markdownDirectory`，它代表`oaks-post`输出的 json 文件的存放目录。
+- `baseUrl?: string`：可选，默认为空字符串`""`，它将作为 posts.json 中各 post 的 url 前缀。
+- `descending?: boolean`：可选，默认为`false`，它决定了`posts.json`中 posts 数组的排列顺序；
+- `excerptOptions?: object`可选：
+  - `rule: PostsExcerptRule`：必填，枚举类型，可选值如下：
+    - `PostsExcerptRule.ByLines`：默认为按行截取 markdown 内容。
+    - `PostsExcerptRule.`：可选按自定义标记截取 markdown 内容。
+  - `lines?: number`：可选，指定所截取内容的行数，空行不计，代码块视作一行。
+  - `tag?: string`：可选，截取到指定标记，默认为`<!--more-->`，这是`hexo`通用的摘要截取标记。

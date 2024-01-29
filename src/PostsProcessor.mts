@@ -6,36 +6,61 @@ import { join } from "path";
 import { pipeline } from "stream/promises";
 import { PostsCollection } from "./PostsCollection.mjs";
 import {
+  getCustomExcerpt,
+  getExcerpt,
   getFileContent,
   getRelativePath,
   getUrlPath,
   normalizePath,
 } from "./utils.mjs";
 
+export enum PostsExcerptRule {
+  ByLines = 1,
+  CustomTag = 2,
+}
+
+export interface PostsExcerptOptions {
+  rule: PostsExcerptRule;
+  lines?: number;
+  tag?: string;
+}
+
 export interface PostsProcessorOptions {
   baseUrl?: string;
   markdownDirectory: string;
   jsonDirectory: string;
   descending?: boolean;
+  excerptOptions?: PostsExcerptOptions;
 }
 
 export class PostsProcessor {
   private existedJsonPathMap: Map<string, string>;
   private collection: PostsCollection;
-  private options: Required<Omit<PostsProcessorOptions, "descending">>;
+  private options: Required<
+    Omit<PostsProcessorOptions, "descending"> & {
+      excerptOptions: Required<PostsExcerptOptions>;
+    }
+  >;
 
   constructor({
     descending,
-    baseUrl,
+    baseUrl = "",
     markdownDirectory,
     jsonDirectory,
+    excerptOptions,
   }: PostsProcessorOptions) {
     this.existedJsonPathMap = new Map();
     this.collection = new PostsCollection(descending);
     this.options = {
-      baseUrl: baseUrl || "",
+      baseUrl,
       markdownDirectory: normalizePath(markdownDirectory),
       jsonDirectory: normalizePath(jsonDirectory),
+      excerptOptions: {
+        rule: PostsExcerptRule.ByLines,
+        lines: 5,
+        tag: "<!--more-->",
+        ...excerptOptions,
+      },
     };
   }
 
@@ -88,11 +113,18 @@ export class PostsProcessor {
       await pipeline(jsonContent, writeStream);
 
       // 3. Collect data of json file.
+      const {
+        baseUrl,
+        excerptOptions: { rule, lines, tag },
+      } = this.options;
       this.collection.collect({
-        url: getUrlPath(join(this.options.baseUrl, getRelativePath(jsonPath))),
+        url: getUrlPath(join(baseUrl, getRelativePath(jsonPath))),
         hash: markdownHash,
         frontMatter,
-        content,
+        excerpt:
+          rule === PostsExcerptRule.ByLines
+            ? getExcerpt(content, lines)
+            : getCustomExcerpt(content, tag),
       });
 
       console.log(`Generate json file: ${jsonPath}`);

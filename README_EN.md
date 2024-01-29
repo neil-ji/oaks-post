@@ -81,7 +81,7 @@ It will generate `.json` file like this:
       "frontMatter": {
         "title": "Hello world"
       },
-      "content": "hello world"
+      "excerpt": "hello world"
     }
   ]
 }
@@ -97,12 +97,30 @@ interface PostsProcessorOptions {
   markdownDirectory: string;
   jsonDirectory: string;
   descending?: boolean;
+  excerptOptions?: PostsExcerptOptions;
+}
+
+interface PostsExcerptOptions {
+  rule: PostsExcerptRule;
+  lines?: number;
+  tag?: string;
+}
+
+enum PostsExcerptRule {
+  ByLines = 1,
+  CustomTag = 2,
 }
 ```
 
 The meanings of each field are as follows:
 
-- `markdownDirectory: string`: Can be passed a relative or absolute path. Relative paths will be resolved by default relative to `process.cwd()`, representing the directory where your markdown files are located.
-- `jsonDirectory: string`: Resolution rules are the same as `markdownDirectory`. It represents the directory where the JSON files output by `oaks-post` will be stored.
-- `baseUrl?: string`: Default is an empty string `""`. It will serve as the URL prefix for each post in the `posts.json`.
-- `descending?: boolean`: Default is `false`. It determines the order of the posts array in `posts.json`.
+- `markdownDirectory: string` (required): Can be a relative or absolute path. If a relative path is provided, it will be resolved relative to `process.cwd()`, representing the directory where your markdown files are located.
+- `jsonDirectory: string` (required): Same resolution rules as `markdownDirectory`. Represents the directory where the json files output by `oaks-post` are stored.
+- `baseUrl?: string` (optional, default: ""): Acts as the URL prefix for each post in `posts.json`.
+- `descending?: boolean` (optional, default: false): Determines the sorting order of the posts array in `posts.json`.
+- `excerptOptions?: object` (optional):
+  - `rule: PostsExcerptRule` (required, enum): Specifies the excerpt rule. Available options:
+    - `PostsExcerptRule.ByLines` (default): Extracts markdown content by lines.
+    - `PostsExcerptRule.`: Custom tag-based excerpt rule.
+  - `lines?: number` (optional): Specifies the number of lines to extract, ignoring empty lines and treating code blocks as single lines.
+  - `tag?: string` (optional, default: `<!--more-->`): Specifies the tag to extract content up to. Defaults to `<!--more-->`, a common excerpt delimiter used in `hexo`.

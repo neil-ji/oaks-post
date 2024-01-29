@@ -55,3 +55,41 @@ export function getRelativePath(pathLike?: string | number | ParsedPath) {
 export function getUrlPath(path: string) {
   return path.split(sep).join("/");
 }
+
+export function getExcerpt(input: string, limit: number): string {
+  const lines = input.split("\n");
+  let output = "";
+  let codeBlock = false;
+  let codeBlockLineCount = 0;
+
+  for (let i = 0; i < lines.length && limit > 0; i++) {
+    const line = lines[i];
+    if (line.startsWith("```")) {
+      codeBlock = !codeBlock;
+      output += line + "\n";
+      if (codeBlock) {
+        codeBlockLineCount = 0;
+      }
+    } else if (codeBlock) {
+      output += line + "\n";
+      codeBlockLineCount++;
+    } else if (line.trim() === "") {
+      // Add empty lines to output
+      output += "\n";
+    } else {
+      output += line + "\n";
+      limit--;
+    }
+  }
+
+  if (codeBlock && codeBlockLineCount > 0) {
+    // If the last line was part of a code block, we close the block
+    output += "```\n";
+  }
+
+  return output.trim();
+}
+
+export function getCustomExcerpt(content: string, tag: string) {
+  return content.slice(0, content.indexOf(tag));
+}

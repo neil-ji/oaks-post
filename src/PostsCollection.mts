@@ -14,7 +14,7 @@ export interface PostItem {
   hash?: string;
   url?: string;
   frontMatter?: PostFrontMatter;
-  content?: string;
+  excerpt?: string;
 }
 
 export interface Posts {
