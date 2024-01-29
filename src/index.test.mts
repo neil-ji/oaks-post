@@ -9,6 +9,6 @@ const markdownProcessor = new PostsProcessor({
   baseUrl: "https://neil-ji.github.io/",
   markdownDirectory,
   jsonDirectory,
-  descendByDate: true,
+  descending: true,
 });
 await markdownProcessor.processFiles();

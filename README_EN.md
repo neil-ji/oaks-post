@@ -96,7 +96,7 @@ interface PostsProcessorOptions {
   baseUrl?: string;
   markdownDirectory: string;
   jsonDirectory: string;
-  descendByDate?: boolean;
+  descending?: boolean;
 }
 ```
 
@@ -105,4 +105,4 @@ The meanings of each field are as follows:
 - `markdownDirectory: string`: Can be passed a relative or absolute path. Relative paths will be resolved by default relative to `process.cwd()`, representing the directory where your markdown files are located.
 - `jsonDirectory: string`: Resolution rules are the same as `markdownDirectory`. It represents the directory where the JSON files output by `oaks-post` will be stored.
 - `baseUrl?: string`: Default is an empty string `""`. It will serve as the URL prefix for each post in the `posts.json`.
-- `descendByDate?: boolean`: Default is `false`. It determines the order of the posts array in `posts.json`.
+- `descending?: boolean`: Default is `false`. It determines the order of the posts array in `posts.json`.

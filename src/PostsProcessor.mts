@@ -16,22 +16,22 @@ export interface PostsProcessorOptions {
   baseUrl?: string;
   markdownDirectory: string;
   jsonDirectory: string;
-  descendByDate?: boolean;
+  descending?: boolean;
 }
 
 export class PostsProcessor {
   private existedJsonPathMap: Map<string, string>;
   private collection: PostsCollection;
-  private options: Required<Omit<PostsProcessorOptions, "descendByDate">>;
+  private options: Required<Omit<PostsProcessorOptions, "descending">>;
 
   constructor({
-    descendByDate,
+    descending,
     baseUrl,
     markdownDirectory,
     jsonDirectory,
   }: PostsProcessorOptions) {
     this.existedJsonPathMap = new Map();
-    this.collection = new PostsCollection(descendByDate);
+    this.collection = new PostsCollection(descending);
     this.options = {
       baseUrl: baseUrl || "",
       markdownDirectory: normalizePath(markdownDirectory),
