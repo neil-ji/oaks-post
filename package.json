@@ -1,6 +1,6 @@
 {
   "name": "oaks-post",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "main": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/neil-ji/oaks-post.git"
   },
-  "description": "A pure ES module runs on Node.js and focus on blog posts batched processing.",
+  "description": "This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario",
   "scripts": {
     "build": "tsc",
     "test": "node --experimental-modules dist/index.test.mjs",
@@ -27,6 +27,7 @@
     "blog",
     "posts",
     "markdown2json",
+    "markdown to json",
     "front matter",
     "markdown"
   ]

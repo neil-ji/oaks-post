@@ -5,6 +5,7 @@ import murmurhash from "murmurhash";
 import { join } from "path";
 import { pipeline } from "stream/promises";
 import { PostsCollection } from "./PostsCollection.mjs";
+import { PostsPaginator, PostsPaginatorOptions } from "./PostsPaginator.mjs";
 import {
   getCustomExcerpt,
   getExcerpt,
@@ -31,13 +32,15 @@ export interface PostsProcessorOptions {
   jsonDirectory: string;
   descending?: boolean;
   excerptOptions?: PostsExcerptOptions;
+  maxItems?: number;
 }
 
 export class PostsProcessor {
   private existedJsonPathMap: Map<string, string>;
   private collection: PostsCollection;
+  private paginator?: PostsPaginator;
   private options: Required<
-    Omit<PostsProcessorOptions, "descending"> & {
+    Omit<PostsProcessorOptions, "descending" | "maxItems"> & {
       excerptOptions: Required<PostsExcerptOptions>;
     }
   >;
@@ -48,13 +51,15 @@ export class PostsProcessor {
     markdownDirectory,
     jsonDirectory,
     excerptOptions,
+    maxItems,
   }: PostsProcessorOptions) {
+    const normalizedJsonDir = normalizePath(jsonDirectory);
     this.existedJsonPathMap = new Map();
     this.collection = new PostsCollection(descending);
     this.options = {
       baseUrl,
       markdownDirectory: normalizePath(markdownDirectory),
-      jsonDirectory: normalizePath(jsonDirectory),
+      jsonDirectory: normalizedJsonDir,
       excerptOptions: {
         rule: PostsExcerptRule.ByLines,
         lines: 5,
@@ -62,6 +67,13 @@ export class PostsProcessor {
         ...excerptOptions,
       },
     };
+    if (maxItems !== undefined) {
+      this.paginator = new PostsPaginator({
+        maxItems: maxItems < 0 ? 10 : maxItems,
+        jsonDirectory: normalizedJsonDir,
+        baseUrl,
+      });
+    }
   }
 
   private extractHashFromJsonFileName(
@@ -164,6 +176,11 @@ export class PostsProcessor {
     }
 
     // 4. start generate posts.json file which looks like 'table' of a database.
-    this.collection.persist(jsonDirectory, [...this.existedJsonPathMap.keys()]);
+    await this.collection.persist(jsonDirectory, [
+      ...this.existedJsonPathMap.keys(),
+    ]);
+
+    // 5. start paginating
+    await this.paginator?.paginate();
   }
 }

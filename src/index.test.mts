@@ -10,5 +10,6 @@ const markdownProcessor = new PostsProcessor({
   markdownDirectory,
   jsonDirectory,
   descending: true,
+  maxItems: 3,
 });
 await markdownProcessor.processFiles();

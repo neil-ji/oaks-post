@@ -1,4 +1,5 @@
 import { createWriteStream } from "fs";
+import { join } from "path";
 import { pipeline } from "stream";
 import { ensureFileExist, getFileContent } from "./utils.mjs";
 
@@ -23,6 +24,9 @@ export interface Posts {
 }
 
 export class PostsCollection {
+  public static get filename() {
+    return "posts";
+  }
   private data: Posts;
   private descending: boolean;
 
@@ -79,7 +83,7 @@ export class PostsCollection {
       return;
     }
 
-    const jsonPath = `${outputDir}/posts.json`;
+    const jsonPath = join(outputDir, `${PostsCollection.filename}.json`);
 
     try {
       await ensureFileExist(jsonPath);
@@ -98,18 +102,8 @@ export class PostsCollection {
       this.sort();
 
       // 2. Write the JSON data to the file
-      const writeStream = createWriteStream(jsonPath);
-      await pipeline(
-        JSON.stringify(this.data, null, 0),
-        writeStream,
-        (error) => {
-          if (error) {
-            console.error("Error writing JSON to posts.json:", error);
-          } else {
-            console.log("Data persisted successfully.");
-          }
-        }
-      );
+      const writeStream = createWriteStream(jsonPath, "utf-8");
+      await pipeline(JSON.stringify(this.data, null, 0), writeStream);
     } catch (error) {
       console.error("Error generating posts.json file:", error);
     }
