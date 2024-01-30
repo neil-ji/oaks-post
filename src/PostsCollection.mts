@@ -71,10 +71,9 @@ export class PostsCollection {
   // }
 
   // Method to persist the current state of the data into a JSON file
-  public async persist(outputDir: string, existedJsonHashes: string[]) {
-    // !!!
+  public async persist(outputDir: string, deletedHashes: string[]) {
     const hasAddOrUpdate = this.data.posts.length > 0;
-    const hasDelete = existedJsonHashes.length > 0;
+    const hasDelete = deletedHashes.length > 0;
     if (!hasAddOrUpdate && !hasDelete) {
       console.log("posts.json has no changed. Skipping...");
       return;
@@ -88,7 +87,7 @@ export class PostsCollection {
       const json = await getFileContent(jsonPath);
       if (json !== "") {
         const existedPosts: Posts = JSON.parse(json);
-        existedJsonHashes.forEach((hash) => {
+        deletedHashes.forEach((hash) => {
           this.deleteByHash(existedPosts.posts, hash);
         });
         this.data = {
@@ -101,7 +100,7 @@ export class PostsCollection {
       // 2. Write the JSON data to the file
       const writeStream = createWriteStream(jsonPath);
       await pipeline(
-        JSON.stringify(this.data, null, 2),
+        JSON.stringify(this.data, null, 0),
         writeStream,
         (error) => {
           if (error) {
