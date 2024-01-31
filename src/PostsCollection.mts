@@ -1,6 +1,6 @@
 import { createWriteStream } from "fs";
 import { join } from "path";
-import { pipeline } from "stream";
+import { pipeline } from "stream/promises";
 import { ensureFileExist, getFileContent } from "./utils.mjs";
 
 export interface PostFrontMatter {
