@@ -1,12 +1,16 @@
 {
   "name": "oaks-post",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "main": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/neil-ji/oaks-post.git"
+  },
+  "bugs": {
+    "email": "neiljimail@gmail.com",
+    "url": "https://github.com/neil-ji/oaks-post/issues"
   },
   "description": "This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario",
   "scripts": {
