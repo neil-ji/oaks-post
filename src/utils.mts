@@ -1,8 +1,19 @@
-import { createReadStream } from "node:fs";
-import { access, writeFile } from "node:fs/promises";
-import { format, ParsedPath, relative, resolve, sep } from "node:path";
+import murmurhash from "murmurhash";
+import { createHash } from "node:crypto";
+import { createReadStream, createWriteStream } from "node:fs";
+import {
+  access,
+  mkdir,
+  readdir,
+  rmdir,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
+import { format, join, ParsedPath, relative, resolve, sep } from "node:path";
+import { pipeline } from "node:stream/promises";
 
-export async function getFileContent(path: string) {
+export async function readByStream(path: string) {
   const readStream = createReadStream(path, "utf-8");
   const chunks: string[] = [];
 
@@ -14,19 +25,9 @@ export async function getFileContent(path: string) {
   return chunks.join("");
 }
 
-export async function ensureFileExist(path: string) {
-  try {
-    // Check if file exists
-    await access(path);
-  } catch (error: any) {
-    // If file does not exist, create it
-    if (error.code === "ENOENT") {
-      await writeFile(path, "");
-      console.log(`${path} doesn't exist. Creating...`);
-    } else {
-      throw error; // Re-throw other errors
-    }
-  }
+export async function writeByStream(path: string, content: string) {
+  const writeStream = createWriteStream(path, "utf-8");
+  await pipeline(content, writeStream);
 }
 
 export function normalizePath(pathLike?: string | number | ParsedPath) {
@@ -92,4 +93,64 @@ export function getExcerpt(input: string, limit: number): string {
 
 export function getCustomExcerpt(content: string, tag: string) {
   return content.slice(0, content.indexOf(tag));
+}
+
+export function calculateHash(content: string) {
+  const hash = murmurhash.v3(content);
+  return hash.toString(16);
+}
+
+export function generateUniqueHash(input = "", length = 8) {
+  const hash = createHash("sha256");
+  hash.update(input);
+  return hash.digest("hex").slice(0, length);
+}
+
+export async function deleteDirectory(dir: string) {
+  try {
+    const files = await readdir(dir);
+
+    for (const file of files) {
+      const filePath = join(dir, file);
+      const stats = await stat(filePath);
+
+      if (stats.isDirectory()) {
+        await deleteDirectory(filePath);
+      } else {
+        await unlink(filePath);
+      }
+    }
+
+    await rmdir(dir);
+  } catch (error) {
+    console.error(`Error deleting directory: ${dir}`, error);
+  }
+}
+
+export async function ensureDirExisted(dir: string) {
+  try {
+    // Check if directory exists
+    await access(dir);
+  } catch (error: any) {
+    // If directory does not exist, create it
+    if (error.code === "ENOENT") {
+      await mkdir(dir);
+    } else {
+      throw error; // Re-throw other errors
+    }
+  }
+}
+
+export async function ensureFileExist(path: string) {
+  try {
+    // Check if file exists
+    await access(path);
+  } catch (error: any) {
+    // If file does not exist, create it
+    if (error.code === "ENOENT") {
+      await writeFile(path, "");
+    } else {
+      throw error; // Re-throw other errors
+    }
+  }
 }

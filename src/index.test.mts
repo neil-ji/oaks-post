@@ -1,15 +1,16 @@
-import { PostsProcessor } from "./index.mjs";
+import { PostsManager } from "./index.mjs";
 
 // Define your test directories and files
 const markdownDirectory = "test_markdown";
 const jsonDirectory = "test_json";
 
 // Run the function to be tested
-const markdownProcessor = new PostsProcessor({
+const manager = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
-  markdownDirectory,
-  jsonDirectory,
+  inputDir: markdownDirectory,
+  outputDir: jsonDirectory,
   descending: true,
   maxItems: 3,
 });
-await markdownProcessor.processFiles();
+
+manager.start();

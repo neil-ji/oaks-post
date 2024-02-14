@@ -131,3 +131,6 @@ dist
 
 # My test sources
 /test_*
+
+# vscode
+.vscode

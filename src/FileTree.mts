@@ -1,0 +1,157 @@
+import { readdir, stat } from "fs/promises";
+import { join } from "node:path";
+import { basename, extname } from "path";
+import { calculateHash, readByStream } from "./utils.mjs";
+
+export class FileTree {
+  private markdownDirectory: string;
+  private jsonDirectory: string;
+
+  constructor(markdownDirectory: string, jsonDirectory: string) {
+    this.markdownDirectory = markdownDirectory;
+    this.jsonDirectory = jsonDirectory;
+  }
+
+  private async extractHash(path: string): Promise<string> {
+    const fileExtname = extname(path);
+    if (fileExtname === ".md") {
+      const content = await readByStream(path);
+      return calculateHash(content + path);
+    }
+    if (fileExtname === ".json") {
+      const hashRegExp = /post_([^_]+)_/;
+      return path.match(hashRegExp)![0];
+    }
+    throw new Error(`Failed extract hash from ${path}`);
+  }
+
+  private extractPrimaryKey(path: string): string {
+    const ext = extname(path);
+    const base = basename(path, ext);
+    if (ext === ".json") {
+      const keyRegExp = /^post_[0-9a-fA-F]{8}_([^_]+)$/;
+      const result = base.match(keyRegExp)?.[1];
+      if (!result) {
+        throw new Error(`Failed extract primary key from: ${path}`);
+      }
+      return result;
+    }
+    return base;
+  }
+
+  private isSupportedExtname(path: string) {
+    const extensionName = extname(path);
+    return [".json", ".md", ""].some((item) => item === extensionName);
+  }
+
+  private async buildTree(path: string) {
+    try {
+      const stats = await stat(path);
+      const root: FileNode = {
+        key: this.extractPrimaryKey(path),
+        path,
+      };
+
+      if (stats.isDirectory()) {
+        const children = await readdir(path);
+        const filteredChildren = children.filter((child) =>
+          this.isSupportedExtname(child)
+        );
+        const nodes = await Promise.all(
+          filteredChildren.map((child) => this.buildTree(join(path, child)))
+        );
+        root.children = nodes;
+      } else {
+        root.hash = await this.extractHash(path);
+      }
+
+      return root;
+    } catch {
+      throw new Error(`Failed build file tree: ${path}`);
+    }
+  }
+
+  private equalNode(mdNode?: FileNode, jsonNode?: FileNode): boolean {
+    return mdNode?.hash === jsonNode?.hash;
+  }
+
+  private flat(root: FileNode): Map<string, FileNode> {
+    const map = new Map();
+    const queue = [root];
+    let prefix = "";
+
+    while (queue.length) {
+      const node = queue.pop();
+      if (node?.children) {
+        prefix = prefix + node.key;
+        queue.push(...node.children);
+      } else {
+        map.set(`${prefix}/${node?.key}`, node);
+      }
+    }
+
+    return map;
+  }
+
+  private equalTree(mdRoot: FileNode, jsonRoot: FileNode): Change[] {
+    const changes: Change[] = [];
+
+    // ignore root directory differences between mdRoot and jsonRoot.
+    const mdMap = this.flat({ ...mdRoot, key: "" });
+    const jsonMap = this.flat({ ...jsonRoot, key: "" });
+
+    // 1. markdown中存在而json中不存在：新增文件；
+    // 2. 都存在但hash值不匹配：修改文件；
+    mdMap.forEach((value, key) => {
+      if (!jsonMap.has(key)) {
+        changes.push({
+          type: ChangeType.Create,
+          markdown: value,
+        });
+      } else if (!this.equalNode(jsonMap.get(key), value)) {
+        changes.push({
+          type: ChangeType.Modify,
+          markdown: value,
+          json: jsonMap.get(key),
+        });
+      }
+    });
+
+    // 3. markdown中不存在而json中存在：删除文件
+    jsonMap.forEach((value, key) => {
+      if (!mdMap.has(key)) {
+        changes.push({
+          type: ChangeType.Delete,
+          json: value,
+        });
+      }
+    });
+
+    return changes;
+  }
+
+  public async compare() {
+    const markdownTree = await this.buildTree(this.markdownDirectory);
+    const jsonTree = await this.buildTree(this.jsonDirectory);
+    return this.equalTree(markdownTree, jsonTree);
+  }
+}
+
+export interface FileNode {
+  key: string; // primary key is the basename of file(without extname) or directory.
+  path: string;
+  hash?: string;
+  children?: FileNode[];
+}
+
+export enum ChangeType {
+  Delete = "Delete",
+  Create = "Create",
+  Modify = "Modify",
+}
+
+export interface Change {
+  markdown?: FileNode;
+  json?: FileNode;
+  type: ChangeType;
+}
