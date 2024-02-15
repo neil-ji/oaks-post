@@ -16,12 +16,13 @@ export class PostsGenerator {
     this.inputDir = inputDir;
   }
 
+  private getParentDir(path: string): string {
+    return join(this.outputDir, relative(this.inputDir, dirname(path)));
+  }
+
   public async create({ hash, path, key }: FileNode): Promise<RawPostItem> {
     try {
-      const parentDir = join(
-        this.outputDir,
-        relative(this.inputDir, dirname(path))
-      );
+      const parentDir = this.getParentDir(path);
       await mkdir(parentDir, {
         recursive: true,
       });
@@ -59,12 +60,14 @@ export class PostsGenerator {
     oldJsonPath: string
   ): Promise<RawPostItem> {
     try {
+      const parentDir = this.getParentDir(path);
+
       const markdownContent = await readByStream(path);
       const { data: frontMatter, content } = grayMatter(markdownContent);
 
       const jsonContent = JSON.stringify({ frontMatter, content }, null, 0);
       const jsonFilename = `post_${hash}_${key}.json`;
-      const newJsonPath = join(this.outputDir, jsonFilename);
+      const newJsonPath = join(parentDir, jsonFilename);
 
       await rename(oldJsonPath, newJsonPath);
 

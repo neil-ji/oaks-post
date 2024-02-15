@@ -50,7 +50,7 @@ export class FileTree {
       const root: FileNode = {
         key: this.extractPrimaryKey(path),
         path,
-        return: parent,
+        parent: parent,
       };
 
       if (stats.isDirectory()) {
@@ -81,9 +81,9 @@ export class FileTree {
   private getNodesPath(node: FileNode): string {
     let key = "";
     let p: FileNode | null = node;
-    while (p?.return) {
+    while (p?.parent) {
       key = p.key + key;
-      p = p.return;
+      p = p.parent;
     }
     return key;
   }
@@ -151,7 +151,7 @@ export class FileTree {
 export interface FileNode {
   key: string; // primary key is the basename of file(without extname) or directory.
   path: string;
-  return: FileNode | null;
+  parent: FileNode | null;
   hash?: string;
   children?: FileNode[];
 }
