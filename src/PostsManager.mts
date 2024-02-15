@@ -1,11 +1,11 @@
-import { access, mkdir, readdir, rename, rm } from "fs/promises";
-import { join, relative } from "path";
+import { access, readdir, rm } from "fs/promises";
+import { join } from "path";
 import { Change, FileTree } from "./FileTree.mjs";
 import { PostItem, PostsCollection } from "./PostsCollection.mjs";
 import { PostsGenerator, RawPostItem } from "./PostsGenerator.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 import {
-  deleteDirectory,
+  deleteDir,
   ensureDirExisted,
   generateUniqueHash,
   getCustomExcerpt,
@@ -56,7 +56,10 @@ export class PostsManager {
       `${normalizedOutputDir}_database`,
       descending
     );
-    this.generator = new PostsGenerator(normalizedOutputDir);
+    this.generator = new PostsGenerator(
+      normalizedInputDir,
+      normalizedOutputDir
+    );
     this.options = {
       baseUrl,
       inputDir: normalizedInputDir,
@@ -94,21 +97,12 @@ export class PostsManager {
 
   private async handleDelete({ json }: Change) {
     if (!json) return;
-    if (json.type === "directory") {
-      await rm(json.path);
-      return;
-    }
     const hash = await this.generator.delete(json);
     this.collection.delete(hash);
   }
 
   private async handleCreate({ markdown }: Change) {
     if (!markdown) return;
-    if (markdown.type === "directory") {
-      const path = relative(this.options.inputDir, markdown.path);
-      await mkdir(join(this.options.outputDir, path));
-      return;
-    }
     const rawPost = await this.generator.create(markdown);
     const post = this.processRawPostItem(rawPost);
     this.collection.collect(post);
@@ -116,18 +110,9 @@ export class PostsManager {
 
   private async handleModify(change: Required<Change>) {
     const { json, markdown } = change;
-    if (markdown.type === "directory" && json.type === "directory") {
-      await rename(json.path, markdown.path);
-    } else if (markdown.type === "directory" && json.type === "file") {
-      await this.handleDelete(change);
-      await mkdir(join(json.path, "..", markdown.key));
-    } else if (markdown.type === "file" && json.type === "directory") {
-      await deleteDirectory(json.path);
-      await this.handleCreate(change);
-    } else {
-      await this.handleDelete(change);
-      await this.handleCreate(change);
-    }
+    const rawPost = await this.generator.modify(markdown, json.path);
+    const post = this.processRawPostItem(rawPost);
+    this.collection.modify(post, json.hash);
   }
 
   private async handleChanges(changes: Change[]) {
@@ -142,12 +127,8 @@ export class PostsManager {
 
   private async clearAll() {
     const { outputDir } = this.options;
-    const postFiles = await readdir(outputDir);
-    await Promise.all(postFiles.map((file) => rm(join(outputDir, file))));
-    const databaseFiles = await readdir(`${outputDir}_database`);
-    await Promise.all(
-      databaseFiles.map((file) => rm(join(`${outputDir}_database`, file)))
-    );
+    await deleteDir(outputDir);
+    await deleteDir(`${outputDir}_database`);
   }
 
   public async start() {

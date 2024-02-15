@@ -20,7 +20,7 @@ export class FileTree {
     }
     if (fileExtname === ".json") {
       const hashRegExp = /post_([^_]+)_/;
-      return path.match(hashRegExp)![0];
+      return path.match(hashRegExp)![1];
     }
     throw new Error(`Failed extract hash from ${path}`);
   }
@@ -44,12 +44,13 @@ export class FileTree {
     return [".json", ".md", ""].some((item) => item === extensionName);
   }
 
-  private async buildTree(path: string) {
+  private async buildTree(path: string, parent: FileNode | null = null) {
     try {
       const stats = await stat(path);
       const root: FileNode = {
         key: this.extractPrimaryKey(path),
         path,
+        return: parent,
       };
 
       if (stats.isDirectory()) {
@@ -58,7 +59,9 @@ export class FileTree {
           this.isSupportedExtname(child)
         );
         const nodes = await Promise.all(
-          filteredChildren.map((child) => this.buildTree(join(path, child)))
+          filteredChildren.map((child) =>
+            this.buildTree(join(path, child), root)
+          )
         );
         root.children = nodes;
       } else {
@@ -75,18 +78,26 @@ export class FileTree {
     return mdNode?.hash === jsonNode?.hash;
   }
 
+  private getNodesPath(node: FileNode): string {
+    let key = "";
+    let p: FileNode | null = node;
+    while (p?.return) {
+      key = p.key + key;
+      p = p.return;
+    }
+    return key;
+  }
+
   private flat(root: FileNode): Map<string, FileNode> {
     const map = new Map();
     const queue = [root];
-    let prefix = "";
 
     while (queue.length) {
-      const node = queue.pop();
+      const node: FileNode = queue.pop()!;
       if (node?.children) {
-        prefix = prefix + node.key;
         queue.push(...node.children);
       } else {
-        map.set(`${prefix}/${node?.key}`, node);
+        map.set(this.getNodesPath(node), node);
       }
     }
 
@@ -100,8 +111,8 @@ export class FileTree {
     const mdMap = this.flat({ ...mdRoot, key: "" });
     const jsonMap = this.flat({ ...jsonRoot, key: "" });
 
-    // 1. markdown中存在而json中不存在：新增文件；
-    // 2. 都存在但hash值不匹配：修改文件；
+    // 1. If it exists in markdown but not in json: add a new file;
+    // 2. If it exists in both but the hash values do not match: modify the file;
     mdMap.forEach((value, key) => {
       if (!jsonMap.has(key)) {
         changes.push({
@@ -117,7 +128,7 @@ export class FileTree {
       }
     });
 
-    // 3. markdown中不存在而json中存在：删除文件
+    // 3. If it exists in json but not in markdown: delete the file.
     jsonMap.forEach((value, key) => {
       if (!mdMap.has(key)) {
         changes.push({
@@ -140,6 +151,7 @@ export class FileTree {
 export interface FileNode {
   key: string; // primary key is the basename of file(without extname) or directory.
   path: string;
+  return: FileNode | null;
   hash?: string;
   children?: FileNode[];
 }

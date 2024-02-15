@@ -83,6 +83,15 @@ export class PostsCollection {
     );
   }
 
+  public modify(newItem: PostItem, hash?: string) {
+    const target = this.data.posts.findIndex((v) => v.hash === hash);
+    if (target === -1) {
+      this.collect(newItem);
+    } else {
+      this.data.posts[target] = { ...newItem };
+    }
+  }
+
   public get posts() {
     return [...this.data.posts];
   }

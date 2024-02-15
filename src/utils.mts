@@ -10,7 +10,15 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import { format, join, ParsedPath, relative, resolve, sep } from "node:path";
+import {
+  dirname,
+  format,
+  join,
+  ParsedPath,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { pipeline } from "node:stream/promises";
 
 export async function readByStream(path: string) {
@@ -106,27 +114,6 @@ export function generateUniqueHash(input = "", length = 8) {
   return hash.digest("hex").slice(0, length);
 }
 
-export async function deleteDirectory(dir: string) {
-  try {
-    const files = await readdir(dir);
-
-    for (const file of files) {
-      const filePath = join(dir, file);
-      const stats = await stat(filePath);
-
-      if (stats.isDirectory()) {
-        await deleteDirectory(filePath);
-      } else {
-        await unlink(filePath);
-      }
-    }
-
-    await rmdir(dir);
-  } catch (error) {
-    console.error(`Error deleting directory: ${dir}`, error);
-  }
-}
-
 export async function ensureDirExisted(dir: string) {
   try {
     // Check if directory exists
@@ -152,5 +139,47 @@ export async function ensureFileExist(path: string) {
     } else {
       throw error; // Re-throw other errors
     }
+  }
+}
+
+async function deleteEmptyParentDirs(dir: string) {
+  const files = await readdir(dir);
+  if (files.length === 0) {
+    await rmdir(dir);
+    const parentDir = dirname(dir);
+    await deleteEmptyParentDirs(parentDir);
+  }
+}
+
+export async function deleteFileRecursively(path: string) {
+  await unlink(path);
+  await deleteEmptyParentDirs(dirname(path));
+}
+
+export async function deleteDir(dir: string) {
+  try {
+    // 读取文件夹中的所有文件和子文件夹
+    const items = await readdir(dir);
+
+    for (const item of items) {
+      const itemPath = join(dir, item);
+      const stats = await stat(itemPath);
+
+      // 如果是文件，则删除
+      if (stats.isFile()) {
+        await unlink(itemPath);
+      } else if (stats.isDirectory()) {
+        // 如果是文件夹，则递归地删除文件夹中的所有文件
+        await deleteDir(itemPath);
+
+        // 如果文件夹为空，则删除文件夹
+        const itemsInDir = await readdir(itemPath);
+        if (itemsInDir.length === 0) {
+          await rmdir(itemPath);
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`Error deleting directory: ${dir}`, err);
   }
 }
