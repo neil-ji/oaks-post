@@ -1,6 +1,6 @@
 import { access, writeFile } from "fs/promises";
 import { join } from "path";
-import { handleError, readByStream, writeByStream } from "./utils.mjs";
+import { readByStream, writeByStream } from "./utils.mjs";
 
 export class PostsCollection {
   public static get basename() {

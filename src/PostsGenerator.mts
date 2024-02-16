@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from "path";
 import { pipeline } from "stream/promises";
 import { FileNode } from "./FileTree.mjs";
 import { PostFrontMatter } from "./PostsCollection.mjs";
-import { deleteFileRecursively, handleError, readByStream } from "./utils.mjs";
+import { deleteFileRecursively, readByStream } from "./utils.mjs";
 
 export class PostsGenerator {
   private inputDir: string;

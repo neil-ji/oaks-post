@@ -103,9 +103,9 @@ export function getCustomExcerpt(content: string, tag: string) {
   return content.slice(0, content.indexOf(tag));
 }
 
-export function calculateHash(content: string) {
+export function calculateHash(content: string, length = 8) {
   const hash = murmurhash.v3(content);
-  return hash.toString(16);
+  return hash.toString(16).padStart(length, "0");
 }
 
 export function generateUniqueHash(input = "", length = 8) {
@@ -158,21 +158,17 @@ export async function deleteFileRecursively(path: string) {
 
 export async function deleteDir(dir: string) {
   try {
-    // 读取文件夹中的所有文件和子文件夹
     const items = await readdir(dir);
 
     for (const item of items) {
       const itemPath = join(dir, item);
       const stats = await stat(itemPath);
 
-      // 如果是文件，则删除
       if (stats.isFile()) {
         await unlink(itemPath);
       } else if (stats.isDirectory()) {
-        // 如果是文件夹，则递归地删除文件夹中的所有文件
         await deleteDir(itemPath);
 
-        // 如果文件夹为空，则删除文件夹
         const itemsInDir = await readdir(itemPath);
         if (itemsInDir.length === 0) {
           await rmdir(itemPath);
