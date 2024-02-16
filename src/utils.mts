@@ -183,8 +183,3 @@ export async function deleteDir(dir: string) {
     console.error(`Error deleting directory: ${dir}`, error);
   }
 }
-
-export function handleError(msg: string, error: any) {
-  console.error(msg, error);
-  process.exit(1);
-}
