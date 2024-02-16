@@ -26,7 +26,7 @@ export class PostsPaginator {
         return file.match(/^posts_\d+\.json$/);
       });
       await Promise.all(postPages.map((file) => rm(join(dir, file))));
-    } catch {
+    } catch (error) {
       throw new Error("Failed clear remained posts pagination file.");
     }
   }
@@ -89,8 +89,8 @@ export class PostsPaginator {
       });
 
       await Promise.all(postPages.map(this.processFile));
-    } catch {
-      throw new Error("Failed paginate.");
+    } catch (error: any) {
+      throw new Error(`Failed paginate.\nDetails:${error.message}`);
     }
   }
 }

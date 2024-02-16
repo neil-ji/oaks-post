@@ -1,7 +1,7 @@
 import { readdir, stat } from "fs/promises";
 import { join } from "node:path";
 import { basename, extname } from "path";
-import { calculateHash, readByStream } from "./utils.mjs";
+import { calculateHash, handleError, readByStream } from "./utils.mjs";
 
 export class FileTree {
   private markdownDirectory: string;
@@ -69,8 +69,9 @@ export class FileTree {
       }
 
       return root;
-    } catch {
-      throw new Error(`Failed build file tree: ${path}`);
+    } catch (error: any) {
+      console.error(`Failed build file tree: ${path}\nDetails: ${error.message}`);
+      process.exit(1);
     }
   }
 

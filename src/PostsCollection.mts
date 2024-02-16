@@ -1,6 +1,6 @@
 import { access, writeFile } from "fs/promises";
 import { join } from "path";
-import { readByStream, writeByStream } from "./utils.mjs";
+import { handleError, readByStream, writeByStream } from "./utils.mjs";
 
 export class PostsCollection {
   public static get basename() {
@@ -51,7 +51,7 @@ export class PostsCollection {
         })
       );
     } catch (error) {
-      throw new Error("Failed create posts.json file.");
+      console.error("Failed create posts.json file.", error);
     }
   }
 
@@ -67,8 +67,8 @@ export class PostsCollection {
   public async load(): Promise<void> {
     try {
       this.data = JSON.parse(await readByStream(this.path));
-    } catch {
-      throw new Error(`Failed load ${PostsCollection.filename}`);
+    } catch (error) {
+      console.error(`Failed load ${PostsCollection.filename}`, error);
     }
   }
 

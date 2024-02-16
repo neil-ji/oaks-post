@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from "path";
 import { pipeline } from "stream/promises";
 import { FileNode } from "./FileTree.mjs";
 import { PostFrontMatter } from "./PostsCollection.mjs";
-import { deleteFileRecursively, readByStream } from "./utils.mjs";
+import { deleteFileRecursively, handleError, readByStream } from "./utils.mjs";
 
 export class PostsGenerator {
   private inputDir: string;
@@ -39,8 +39,9 @@ export class PostsGenerator {
 
       console.log(`Generate json file: ${jsonPath}`);
       return { path: jsonPath, hash: hash!, frontMatter, content };
-    } catch {
-      throw new Error("Error: failed create post_[hash]_[key].json");
+    } catch (error) {
+      console.error("Error: failed create post_[hash]_[key].json", error);
+      process.exit(1);
     }
   }
 
@@ -50,8 +51,9 @@ export class PostsGenerator {
 
       console.log(`Delete json file: ${node.path}`);
       return node.hash!;
-    } catch {
-      throw new Error(`Failed delete file: ${node.path}`);
+    } catch (error) {
+      console.error(`Failed delete file: ${node.path}`, error);
+      process.exit(1);
     }
   }
 
@@ -76,8 +78,9 @@ export class PostsGenerator {
 
       console.log(`Update json file name: ${oldJsonPath} => ${newJsonPath}`);
       return { path: newJsonPath, hash: hash!, frontMatter, content };
-    } catch {
-      throw new Error("Error: failed update post_[hash]_[key].json");
+    } catch (error) {
+      console.error("Error: failed update post_[hash]_[key].json", error);
+      process.exit(1);
     }
   }
 }

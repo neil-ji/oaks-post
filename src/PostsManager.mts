@@ -137,7 +137,7 @@ export class PostsManager {
     // 0. Validate directory.
     try {
       await access(inputDir);
-    } catch {
+    } catch(error) {
       throw new Error("Make sure that inputDir was existed.");
     }
     await ensureDirExisted(outputDir);

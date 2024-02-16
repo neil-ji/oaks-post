@@ -179,7 +179,12 @@ export async function deleteDir(dir: string) {
         }
       }
     }
-  } catch (err) {
-    console.error(`Error deleting directory: ${dir}`, err);
+  } catch (error) {
+    console.error(`Error deleting directory: ${dir}`, error);
   }
+}
+
+export function handleError(msg: string, error: any) {
+  console.error(msg, error);
+  process.exit(1);
 }
