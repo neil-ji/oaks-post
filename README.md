@@ -16,6 +16,7 @@
   - 博客索引：生成`posts.json`，包含所有博客文章的基本信息；
   - 博客摘要：长内容会按行数或指定的特殊标记（如`<!--more-->`）截取出摘要；
   - 分页：将`posts.json`中的数据分割到若干 JSON 文件中，生成`posts_[page].json`；
+  - 排序：对 posts 进行基于时间或自然语言的排序；
 - 性能优化：
   - 跳过已处理过的文件；
   - 借助分页功能可以实现按需加载；
@@ -38,7 +39,7 @@ npm install oaks-post
 调用如下：
 
 ```js
-import { PostsManager } from "oaks-post";
+import { PostsManager, sortDateAscend } from "oaks-post";
 
 const yourMarkdownDirectory = "markdown";
 const yourJsonDirectory = "json";
@@ -47,8 +48,8 @@ const posts = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
   inputDir: yourMarkdownDirectory,
   outputDir: yourJsonDirectory,
-  descending: true,
-  maxItems: 3,
+  itemsPerPage: 3,
+  sort: sortDateAscend(),
 });
 
 posts.start();

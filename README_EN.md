@@ -16,6 +16,7 @@ Implemented:
   - Blog index: Generate `posts.json`, which contains basic information of all blog articles;
   - Blog abstract: Long content will be cut into abstracts by line number or specified special marks (such as `<!--more-->`);
   - Pagination: Split the data in `posts.json` into several JSON files, generate `posts_[page].json`;
+  - Sorting: Sort posts based on time or natural language;
 - Performance optimization:
   - Skip files that have been processed;
   - On-demand loading can be achieved with the help of pagination function;
@@ -38,7 +39,7 @@ npm install oaks-post
 The invocation is as follows:
 
 ```js
-import { PostsManager } from "oaks-post";
+import { PostsManager, sortDateAscend } from "oaks-post";
 
 const yourMarkdownDirectory = "markdown";
 const yourJsonDirectory = "json";
@@ -47,8 +48,8 @@ const posts = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
   inputDir: yourMarkdownDirectory,
   outputDir: yourJsonDirectory,
-  descending: true,
-  maxItems: 3,
+  itemsPerPage: 3,
+  sort: sortDateAscend(),
 });
 
 posts.start();
