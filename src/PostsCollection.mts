@@ -38,17 +38,21 @@ export class PostsCollection {
   }
 
   public async save(): Promise<void> {
-    await writeByStream(this.path, JSON.stringify(this.data));
+    await writeByStream(this.path, JSON.stringify(this.data, null, 0));
   }
 
   public async init(): Promise<void> {
     try {
       await writeFile(
         this.path,
-        JSON.stringify({
-          buildTime: new Date(),
-          posts: [],
-        })
+        JSON.stringify(
+          {
+            buildTime: new Date(),
+            posts: [],
+          },
+          null,
+          0
+        )
       );
     } catch (error) {
       console.error("Failed create posts.json file.", error);

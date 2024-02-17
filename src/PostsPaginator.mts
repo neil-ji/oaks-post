@@ -47,7 +47,7 @@ export class PostsPaginator {
     );
     await ensureFileExist(filePath);
     const writeStream = createWriteStream(filePath, "utf-8");
-    return pipeline(JSON.stringify(data, null, 2), writeStream);
+    return pipeline(JSON.stringify(data, null, 0), writeStream);
   };
 
   public paginate = async (posts: PostItem[]) => {
