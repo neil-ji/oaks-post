@@ -1,16 +1,18 @@
-import { PostsManager } from "./index.mjs";
+import { PostsExcerptRule, PostsManager } from "./index.mjs";
 
-// Define your test directories and files
-const markdownDirectory = "test_markdown";
-const jsonDirectory = "test_json";
+const yourMarkdownDirectory = "test_markdown";
+const yourJsonDirectory = "test_json";
 
-// Run the function to be tested
-const manager = new PostsManager({
+const posts = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
-  inputDir: markdownDirectory,
-  outputDir: jsonDirectory,
+  inputDir: yourMarkdownDirectory,
+  outputDir: yourJsonDirectory,
+  excerptOptions: {
+    rule: PostsExcerptRule.CustomTag,
+    tag: "<!--YOUR_TAG-->"
+  },
   descending: true,
   maxItems: 3,
 });
 
-manager.start();
+posts.start();

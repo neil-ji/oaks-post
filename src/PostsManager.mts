@@ -19,7 +19,7 @@ export class PostsManager {
   private collection: PostsCollection;
   private generator: PostsGenerator;
   private options: Required<
-    Omit<PostsProcessorOptions, "descending" | "maxItems"> & {
+    Omit<PostsManagerOptions, "descending" | "maxItems"> & {
       excerptOptions: Required<PostsExcerptOptions>;
     }
   > & { maxItems?: number };
@@ -31,7 +31,7 @@ export class PostsManager {
     outputDir,
     excerptOptions,
     maxItems,
-  }: PostsProcessorOptions) {
+  }: PostsManagerOptions) {
     // validate input
     if (inputDir === "") {
       throw new Error("Option 'inputDir' cannot be empty.");
@@ -183,7 +183,7 @@ export interface PostsExcerptOptions {
   tag?: string;
 }
 
-export interface PostsProcessorOptions {
+export interface PostsManagerOptions {
   baseUrl?: string;
   inputDir: string;
   outputDir: string;

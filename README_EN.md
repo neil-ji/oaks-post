@@ -1,30 +1,33 @@
-# Introduce
+# Introduction
 
-This is a pure ES module (`.mjs`) focused on **Markdown file batch processing** in the **static blog** scenario, exclusively supporting Node.js. It processes Markdown data in bulk and stores it in JSON files in a specific format. Tailored for blog scenarios, it provides indexing and pagination functionality.
+This is a pure ES module focusing on **static blog** scenario **Markdown file batch processing**, only supports Nodejs, batch Markdown data in a specific format stored in JSON files, for blogging scenarios, to provide indexing, paging features.
 
-Document list:
+Documents list:
 
-- [中文](/README.md)
+- [Chinese](/README.md)
 - [English](/README_EN.md)
 
 # Features
 
-Implemented:
+Implemented features:
 
-- Data retrieval:
-  - Article details: Batch parsing of Markdown files (supporting Front Matter), generating `post_[hash].json` (where hash refers to the hash value of the Markdown file).
-  - Article index: Generates `posts.json`, containing basic information of all blog articles. Long content is truncated either by line count or by a special marker (e.g., `<!--more-->`).
-  - Pagination: Splits the data from `posts.json` into several JSON files, generating `posts_[page].json` (where page is the page number).
+- Data query:
+  - Blog details: batch parse markdown files (support Front Matter parsing), generate `post_[hash]_[basename].json`;
+  - Blog index: generate `posts.json`, containing basic information of all blog posts;
+  - Blog summary: long content will be summarized by line or specified special tags (e.g. `<! ---more-->`) to truncate the summary;
+  - Paging: split the data in `posts.json` into several JSON files to generate `posts_[page].json`;
 - Performance optimization:
-  - After the initial execution, subsequent executions will compare hash values and skip files that have been processed before.
-  - Pagination allows for on-demand loading.
-- Type checking: Complete TypeScript type definitions, providing excellent code hints.
+  - Skips files that have already been processed;
+  - On-demand loading is possible with the help of the paging feature;
+  - Streaming reads and writes to improve the efficiency of processing long blogs;
+- Type checking: complete Typescript type definition, good code hints;
 
 TODO List:
 
-- JSON file compression.
+- JSON file compression/decompression;
+- Support Tag/Category function;
 
-# Install
+# Installation
 
 ```bash
 npm install oaks-post
@@ -32,137 +35,226 @@ npm install oaks-post
 
 # Usage
 
-Use as follows:
+Invoke the following:
 
 ```js
-import { PostsProcessor } from "oaks-post";
+import { PostsManager } from "oaks-post";
 
-// Define your directories
-const markdownDirectory = "markdownFiles";
-const jsonDirectory = "jsonFiles";
+const yourMarkdownDirectory = "markdown";
+const yourJsonDirectory = "json";
 
-const posts = new PostsProcessor({
+const posts = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
-  markdownDirectory,
-  jsonDirectory,
+  inputDir: yourMarkdownDirectory,
+  outputDir: yourJsonDirectory,
   descending: true,
   maxItems: 3,
 });
-await posts.processFiles();
+
+posts.start();
 ```
 
-For example, the Markdown file is as follows:
+For example, the `markdown/Hello Oaks.md` file looks like this:
 
 ```markdown
 ---
-title: 数算再回顾（一）二叉树性质
+title: Hello Oaks
 date: 2023-07-25 14:40:00
-tag: leetcode
+tag:
+  - introduce
+  - oaks-post
 ---
 
-## 前言
+# Oaks Introduction
 
-数（据结构）算（法）再回顾，加深记忆抗遗忘。
+This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
 
-## 基本性质
+This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
 
-1. 非空二叉树的叶子节点数，等于度为 2 的节点数加 1；
-2. 第 k 层至多有 `2^(k − 1)` 个节点（每层节点数可构成公比为 2 的等比数列）；
-3. 高度为 h，至多有 `2^ℎ − 1`；
-4. n 个节点的二叉链表，有 n+1 个空链域（左或右孩子指针为 NULL）；
+This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
 
-[注]：节点的度就是节点的子节点个数，或称分支个数，考研爱考，算法题没见过。
+This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
 
-## 满、完全二叉树性质
-
-前提：根节点为 1，逐层从左到右编号，当前节点为 i；
-
-（一）父子节点间的关系：
-
-- 父节点：`⌊i / 2⌋`；
-- 左子：`2 * i`；
-- 右子：`2 * i + 1`；
-
-（二）若`i ≤ ⌊n / 2⌋`，则节点 i 为分支节点，否则为叶子节点。
-
-（三）对于完全二叉树，从 1 往后遍历，若找到第一个没有右孩子的节点 i，则大于 i 的节点都是叶子节点。
-
-[注]:数学符号`⌊ x ⌋`意思是向下取整；
-
-## 二叉树的顺序存储
-
-满、完全二叉树按照从根到叶，从左到右的顺序，依次存入一维数组（从数组下标 1 开始存，舍弃 0，则直接照搬前述父子编号关系式即可）。
-
-其他二叉树添加空节点，构造成完全二叉树，再按上述顺序存入一维数组。
+This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
 ```
 
-The corresponding generated JSON file is as follows:
+Generate the blog details `json\post_a46fd04a_Hello Oaks.json` file as follows:
 
 ```json
-// YOUR_PROJECT_DIRECTORY\jsonFiles\post_a5d78676.json
 {
   "frontMatter": {
-    "title": "数算再回顾（一）二叉树性质",
+    "title": "Hello Oaks",
     "date": "2023-07-25T14:40:00.000Z",
-    "tag": "leetcode"
+    "tag": ["introduce", "oaks-post"]
   },
-  "content": "\r\n## 前言\r\n\r\n数（据结构）算（法）再回顾，加深记忆抗遗忘。\r\n\r\n## 基本性质\r\n\r\n1. 非空二叉树的叶子节点数，等于度为 2 的节点数加 1；\r\n2. 第 k 层至多有 `2^(k − 1)` 个节点（每层节点数可构成公比为 2 的等比数列）；\r\n3. 高度为 h，至多有 `2^ℎ − 1`；\r\n4. n 个节点的二叉链表，有 n+1 个空链域（左或右孩子指针为 NULL）；\r\n\r\n[注]：节点的度就是节点的子节点个数，或称分支个数，考研爱考，算法题没见过。\r\n\r\n## 满、完全二叉树性质\r\n\r\n前提：根节点为 1，逐层从左到右编号，当前节点为 i；\r\n\r\n（一）父子节点间的关系：\r\n\r\n- 父节点：`⌊i / 2⌋`；\r\n- 左子：`2 * i`；\r\n- 右子：`2 * i + 1`；\r\n\r\n（二）若`i ≤ ⌊n / 2⌋`，则节点 i 为分支节点，否则为叶子节点。\r\n\r\n（三）对于完全二叉树，从 1 往后遍历，若找到第一个没有右孩子的节点 i，则大于 i 的节点都是叶子节点。\r\n\r\n[注]:数学符号`⌊ x ⌋`意思是向下取整；\r\n\r\n## 二叉树的顺序存储\r\n\r\n满、完全二叉树按照从根到叶，从左到右的顺序，依次存入一维数组（从数组下标 1 开始存，舍弃 0，则直接照搬前述父子编号关系式即可）。\r\n\r\n其他二叉树添加空节点，构造成完全二叉树，再按上述顺序存入一维数组。\r\n"
+  "content": "\r\n## Oaks Introduction\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario."
 }
 ```
 
+Generate the blog index file `json_database/posts.json`:
+
 ```json
-// YOUR_PROJECT_DIRECTORY\jsonFiles\posts.json
 {
-  "buildTime": "2024-01-30T07:55:28.259Z",
+  "buildTime": "2024-02-17T06:14:11.288Z",
   "posts": [
-    // others...
     {
-      "url": "https:/neil-ji.github.io/test_json/post_a5d78676.json",
-      "hash": "a5d78676",
+      "url": "https:/neil-ji.github.io/json/post_a46fd04a_Hello Oaks.json",
+      "hash": "a46fd04a",
       "frontMatter": {
-        "title": "数算再回顾（一）二叉树性质",
+        "title": "Hello Oaks",
         "date": "2023-07-25T14:40:00.000Z",
-        "tag": "leetcode"
+        "tag": ["introduce", "oaks-post"]
       },
-      "excerpt": "## 前言\r\n\n数（据结构）算（法）再回顾，加深记忆抗遗忘。\r\n\n## 基本性质\r\n\n1. 非空二叉树的叶子节点数，等于度为 2 的节点数加 1；\r\n2. 第 k 层至多有 `2^(k − 1)` 个节点（每层节点数可构成公比为 2 的等比数列）；"
+      "excerpt": "## Oaks Introduction\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario."
     }
-    // others...
   ]
 }
 ```
 
+Generate the paging file `json_database/posts_1.json`:
+
 ```json
-// YOUR_PROJECT_DIRECTORY\jsonFiles\posts_1.json
 {
   "current": 1,
   "posts": [
-    // others...
     {
-      "url": "https:/neil-ji.github.io/test_json/post_a5d78676.json",
-      "hash": "a5d78676",
+      "url": "https:/neil-ji.github.io/json/post_a46fd04a_Hello Oaks.json",
+      "hash": "a46fd04a",
       "frontMatter": {
-        "title": "数算再回顾（一）二叉树性质",
+        "title": "Hello Oaks",
         "date": "2023-07-25T14:40:00.000Z",
-        "tag": "leetcode"
+        "tag": ["introduce", "oaks-post"]
       },
-      "excerpt": "## 前言\r\n\n数（据结构）算（法）再回顾，加深记忆抗遗忘。\r\n\n## 基本性质\r\n\n1. 非空二叉树的叶子节点数，等于度为 2 的节点数加 1；\r\n2. 第 k 层至多有 `2^(k − 1)` 个节点（每层节点数可构成公比为 2 的等比数列）；"
+      "excerpt": "## Oaks Introduction\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario."
     }
-    // others...
   ]
 }
 ```
 
-Note that for paginated JSON data, if there is no previous or next page, there will be no 'prev' or 'next' fields.
+# Blog Details
+
+Each Markdown file will generate a corresponding blog details file, named `post_[hash]_[basename].json`.
+
+1. hash: 8-bit hexadecimal number hash value, generated by Markdown file name + file content, using non-cryptographic hash function MurmurHash3, faster execution. 2. basename: Markdown file name and hash value, generated by Markdown file content, using non-cryptographic hash function MurmurHash3, faster execution;
+2. basename: Markdown file name;
+
+The blog details attributes are defined as follows:
+
+1. frontMatter: key-value pairs generated after parsing Front Matter, generally used for defining blog metadata, it is a YAML syntax block identified by `---`;
+2. content: Markdown main text;
+
+# Blog Summary
+
+Flexible control of the blog summary interception rules via `excerptOptions`, as follows.
+
+## Intercept summaries by number of lines
+
+Intercepting by lines is the default behavior, and Markdown multi-line block syntax will be recognized as 1 line.
+
+An example of intercepting the first 5 lines is shown below:
+
+```ts
+const posts = new PostsManager({
+  // ...others
+  excerptOptions: {
+    rule: PostsExcerptRule.ByLines,
+    lines: 5,
+  },
+});
+```
+
+## Intercept summaries by specified tags
+
+Supports intercepting content according to custom tags in Markdown files. If you select this rule, you can leave out the tags, and the interceptor tags will default to `<! ---more-->`, which is a popular way to write hexo.
+
+Of course, you can also provide any customized tags you want, but it is recommended to use Markdown comment syntax to define tags.
+
+```ts
+const posts = new PostsManager({
+  // ...others
+  excerptOptions: {
+    rule: PostsExcerptRule.CustomTag,
+    tag: "<!--YOUR_TAG-->",
+  },
+});
+```
+
+Markdown files use tags as follows:
+
+```markdown
+Hello
+Hello
+
+<!--YOUR_TAG-->
+
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+```
+
+The JSON data generated:
+
+```json
+{
+  "buildTime": "2024-02-17T06:14:11.288Z",
+  "posts": [
+    {
+      // ... . others
+      "excerpt": "Hello\nHello\n\n"
+    }
+  ]
+}
+```
+
+# Blog Index
+
+This file is used in the scenario of getting the full amount of blog data, specifically, `oaks-post` collects all the Markdown processed JSON data and stores it uniformly in the `posts.json` file, which is similar to the role of a table in a database, providing an index of all the blog details.
+
+The properties are defined as follows:
+
+```ts
+interface Posts {
+  buildTime: Date;
+  posts: PostItem[];
+}
+interface PostItem {
+  hash?: string;
+  url?: string;
+  frontMatter?: PostFrontMatter;
+  excerpt?: string;
+}
+interface PostFrontMatter {
+  [key: string]: any;
+}
+```
+
+# Blog Paging
+
+Enable paging via `maxItems` when you need to page or scroll data, default **no paging**, default value will be used when passing illegal data 10.
+
+Pagination file naming format is `posts_[page].json`, page stands for page number, properties are defined as follows:
+
+```ts
+interface PostsPage {
+  current: number;
+  posts: PostItem[];
+  prev?: string;
+  next?: string;
+}
+```
 
 # Configuration Parameters
 
-You can pass an object to control some behaviors of the PostsProcessor, and the TypeScript type definition for this object is as follows:
+You can pass in an object to control some of the PostsManager's behavior, which has the following TS type definition:
 
 ```ts
-interface PostsProcessorOptions {
+interface PostsManagerOptions {
   baseUrl?: string;
-  markdownDirectory: string;
-  jsonDirectory: string;
+  inputDir: string;
+  outputDir: string;
   descending?: boolean;
   excerptOptions?: PostsExcerptOptions;
   maxItems?: number;
@@ -180,16 +272,16 @@ enum PostsExcerptRule {
 }
 ```
 
-The meanings of each field are as follows:
+The following are the meanings of the fields:
 
-- `markdownDirectory: string` (required): Can be a relative or absolute path. If a relative path is provided, it will be resolved relative to `process.cwd()`, representing the directory where your markdown files are located.
-- `jsonDirectory: string` (required): Same resolution rules as `markdownDirectory`. Represents the directory where the json files output by `oaks-post` are stored.
-- `baseUrl?: string` (optional, default: ""): Acts as the URL prefix for each post in `posts.json`.
-- `descending?: boolean` (optional, default: false): Determines the sorting order of the posts array in `posts.json`.
-- `excerptOptions?: object` (optional):
-  - `rule: PostsExcerptRule` (required, enum): Specifies the excerpt rule. Available options:
-    - `PostsExcerptRule.ByLines` (default): Extracts markdown content by lines.
-    - `PostsExcerptRule.`: Custom tag-based excerpt rule.
-  - `lines?: number` (optional): Specifies the number of lines to extract, ignoring empty lines and treating code blocks as single lines.
-  - `tag?: string` (optional, default: `<!--more-->`): Specifies the tag to extract content up to. Defaults to `<!--more-->`, a common excerpt delimiter used in `hexo`.
-- `maxItems?: number` (optional) Specifying this value will enable pagination. When set to a value less than 0, the default value of 10 will be used.
+- `inputDir: string`: required, you can pass relative or absolute path, the relative path will be parsed by default with `process.cwd()` as the reference, it represents the directory where your markdown file is located;
+- `outputDir: string`: required, the parsing rule is the same as `inputDir`, it represents the directory where the json file output by `oaks-post` is stored;
+- `baseUrl?: string`: optional, default is empty string `""`, it will be used as the url prefix of each post in posts.json;
+- `descending?: boolean`: optional, defaults to `false` (in ascending chronological order), which determines the order of the posts array in `posts.json`;
+- `excerptOptions?: object` optional:
+  - `rule: PostsExcerptRule`: required, enumeration type, optional values as follows:
+    - `PostsExcerptRule.ByLines`: default to intercept markdown content by lines.
+    - CustomTag`: optionally capture markdown content by custom tag.
+  - `lines?: number`: optional, specify the number of lines to be intercepted, blank lines will not be counted, code block will be treated as one line.
+  - `tag?: string`: optionally, intercept to the specified tag, default is `<! ---more-->`, this is `hexo` generic summary intercept tag.
+- `maxItems?: number`: optional, specify this value to enable paging, paging is not enabled by default, default value 10 will be used if less than 0;
