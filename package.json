@@ -21,7 +21,6 @@
   "author": "Neil Ji",
   "license": "Apache-2.0",
   "dependencies": {
-    "del": "^7.1.0",
     "gray-matter": "^4.0.3",
     "murmurhash": "^2.0.1"
   },
