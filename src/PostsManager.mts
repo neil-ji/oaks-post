@@ -116,13 +116,11 @@ export class PostsManager {
   }
 
   private async handleChanges(changes: Change[]) {
-    await this.collection.load();
     for (const change of changes) {
       await (this[`handle${change.type}`] as (c: Change) => Promise<void>)(
         change
       );
     }
-    await this.collection.save();
   }
 
   private async clearAll() {
@@ -137,7 +135,7 @@ export class PostsManager {
     // 0. Validate directory.
     try {
       await access(inputDir);
-    } catch(error) {
+    } catch (error) {
       throw new Error("Make sure that inputDir was existed.");
     }
     await ensureDirExisted(outputDir);
@@ -148,13 +146,17 @@ export class PostsManager {
       await this.clearAll();
       await this.collection.init();
     }
+    await this.collection.load();
 
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
     const changes = await new FileTree(inputDir, outputDir).compare();
 
     // 3. Handle all changes.
     if (changes.length > 0) {
-      this.handleChanges(changes);
+      await this.handleChanges(changes);
+      await this.collection.save();
+    } else {
+      console.log("Files have no changes.");
     }
 
     // 4. Paginate.

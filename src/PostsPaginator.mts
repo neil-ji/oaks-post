@@ -38,10 +38,9 @@ export class PostsPaginator {
     this.maxItems = maxItems;
     this.outputDir = outputDir;
     this.baseUrl = baseUrl;
-    this.processFile.bind(this);
   }
 
-  private async processFile(data: PostsPage) {
+  private processFile = async (data: PostsPage) => {
     const filePath = join(
       this.outputDir,
       `${PostsCollection.basename}_${data.current}.json`
@@ -49,9 +48,9 @@ export class PostsPaginator {
     await ensureFileExist(filePath);
     const writeStream = createWriteStream(filePath, "utf-8");
     return pipeline(JSON.stringify(data, null, 2), writeStream);
-  }
+  };
 
-  public async paginate(posts: PostItem[]) {
+  public paginate = async (posts: PostItem[]) => {
     try {
       const postGroups = [];
 
@@ -92,5 +91,5 @@ export class PostsPaginator {
     } catch (error: any) {
       throw new Error(`Failed paginate.\nDetails:${error.message}`);
     }
-  }
+  };
 }
