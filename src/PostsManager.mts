@@ -1,38 +1,33 @@
-import { access, readdir, rm } from "fs/promises";
-import { join } from "path";
+import { access } from "fs/promises";
+
 import { Change, FileTree } from "./FileTree.mjs";
-import { PostItem, PostsCollection } from "./PostsCollection.mjs";
-import { PostsGenerator, RawPostItem } from "./PostsGenerator.mjs";
+import { PostsCollection, PostsCollectionOptions } from "./PostsCollection.mjs";
+import { PostsGenerator } from "./PostsGenerator.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 import {
   deleteDir,
   ensureDirExisted,
   generateUniqueHash,
-  getCustomExcerpt,
-  getExcerpt,
-  getRelativePath,
-  getUrlPath,
   normalizePath,
 } from "./utils.mjs";
 
 export class PostsManager {
   private collection: PostsCollection;
   private generator: PostsGenerator;
-  private options: Required<
-    Omit<PostsManagerOptions, "descending" | "maxItems"> & {
-      excerptOptions: Required<PostsExcerptOptions>;
-    }
-  > & { maxItems?: number };
+  private paginator?: PostsPaginator;
+  private inputDir: string;
+  private outputDir: string;
+  private databaseDir: string;
 
   constructor({
-    descending,
-    baseUrl = "",
     inputDir,
     outputDir,
-    excerptOptions,
-    maxItems,
+    baseUrl,
+    itemsPerPage,
+    sort,
+    excerpt,
   }: PostsManagerOptions) {
-    // validate input
+    // Validate input
     if (inputDir === "") {
       throw new Error("Option 'inputDir' cannot be empty.");
     }
@@ -48,51 +43,30 @@ export class PostsManager {
         `Warning: It's NOT SAFE for outputDir and inputDir to be the same. Therefore, outputDir will be replaced with '${outputDir}' by default.`
       );
     }
-    // normalize input & create object
+    // Normalize input
     const normalizedInputDir = normalizePath(inputDir);
     const normalizedOutputDir = normalizePath(outputDir);
+    const databaseDir = `${normalizedOutputDir}_database`;
 
-    this.collection = new PostsCollection(
-      `${normalizedOutputDir}_database`,
-      descending
-    );
+    this.inputDir = normalizedInputDir;
+    this.outputDir = normalizedOutputDir;
+    this.databaseDir = databaseDir;
+    this.collection = new PostsCollection(databaseDir, {
+      baseUrl,
+      sort,
+      excerpt,
+    });
     this.generator = new PostsGenerator(
       normalizedInputDir,
       normalizedOutputDir
     );
-    this.options = {
-      baseUrl,
-      inputDir: normalizedInputDir,
-      outputDir: normalizedOutputDir,
-      excerptOptions: {
-        rule: PostsExcerptRule.ByLines,
-        lines: 5,
-        tag: "<!--more-->",
-        ...excerptOptions,
-      },
-      maxItems,
-    };
-  }
-
-  private processRawPostItem({
-    path,
-    hash,
-    frontMatter,
-    content,
-  }: RawPostItem): PostItem {
-    const {
-      baseUrl,
-      excerptOptions: { rule, lines, tag },
-    } = this.options;
-    return {
-      url: getUrlPath(join(baseUrl, getRelativePath(path))),
-      hash,
-      frontMatter,
-      excerpt:
-        rule === PostsExcerptRule.ByLines
-          ? getExcerpt(content, lines)
-          : getCustomExcerpt(content, tag),
-    };
+    if (itemsPerPage !== undefined) {
+      this.paginator = new PostsPaginator({
+        itemsPerPage,
+        outputDir: databaseDir,
+        baseUrl,
+      });
+    }
   }
 
   private async handleDelete({ json }: Change) {
@@ -104,15 +78,13 @@ export class PostsManager {
   private async handleCreate({ markdown }: Change) {
     if (!markdown) return;
     const rawPost = await this.generator.create(markdown);
-    const post = this.processRawPostItem(rawPost);
-    this.collection.collect(post);
+    this.collection.collect(rawPost);
   }
 
   private async handleModify(change: Required<Change>) {
     const { json, markdown } = change;
     const rawPost = await this.generator.modify(markdown, json.path);
-    const post = this.processRawPostItem(rawPost);
-    this.collection.modify(post, json.hash);
+    this.collection.modify(rawPost, json.hash);
   }
 
   private async handleChanges(changes: Change[]) {
@@ -124,22 +96,19 @@ export class PostsManager {
   }
 
   private async clearAll() {
-    const { outputDir } = this.options;
-    await deleteDir(outputDir);
-    await deleteDir(`${outputDir}_database`);
+    await deleteDir(this.outputDir);
+    await deleteDir(this.databaseDir);
   }
 
   public async start() {
-    const { inputDir, outputDir, maxItems, baseUrl } = this.options;
-
     // 0. Validate directory.
     try {
-      await access(inputDir);
+      await access(this.inputDir);
     } catch (error) {
       throw new Error("Make sure that inputDir was existed.");
     }
-    await ensureDirExisted(outputDir);
-    await ensureDirExisted(`${outputDir}_database`);
+    await ensureDirExisted(this.outputDir);
+    await ensureDirExisted(this.databaseDir);
 
     // 1. Clear all json files if posts.json hasn't existed.
     if (!(await this.collection.hasExisted())) {
@@ -149,45 +118,35 @@ export class PostsManager {
     await this.collection.load();
 
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
-    const changes = await new FileTree(inputDir, outputDir).compare();
+    const changes = await new FileTree(this.inputDir, this.outputDir).compare();
 
     // 3. Handle all changes.
     if (changes.length > 0) {
       await this.handleChanges(changes);
+      this.collection.sort();
       await this.collection.save();
     } else {
       console.log("Files have no changes.");
     }
 
     // 4. Paginate.
-    await PostsPaginator.clear(outputDir);
+    await PostsPaginator.clear(this.outputDir);
 
-    if (maxItems !== undefined) {
-      new PostsPaginator({
-        maxItems: Number.isInteger(maxItems) ? maxItems : 10,
-        outputDir: `${outputDir}_database`,
-        baseUrl,
-      }).paginate(this.collection.posts);
-    }
+    this.paginator?.paginate(this.collection.posts);
+  }
+
+  public async clean() {
+    console.log(
+      "Clean all files in the paths:",
+      this.outputDir,
+      this.databaseDir
+    );
+    await this.clearAll();
   }
 }
 
-export enum PostsExcerptRule {
-  ByLines = 1,
-  CustomTag = 2,
-}
-
-export interface PostsExcerptOptions {
-  rule: PostsExcerptRule;
-  lines?: number;
-  tag?: string;
-}
-
-export interface PostsManagerOptions {
-  baseUrl?: string;
+export interface PostsManagerOptions extends PostsCollectionOptions {
   inputDir: string;
   outputDir: string;
-  descending?: boolean;
-  excerptOptions?: PostsExcerptOptions;
-  maxItems?: number;
+  itemsPerPage?: number;
 }

@@ -1,6 +1,14 @@
 import { access, writeFile } from "fs/promises";
 import { join } from "path";
-import { readByStream, writeByStream } from "./utils.mjs";
+import {
+  getCustomExcerpt,
+  getExcerpt,
+  getRelativePath,
+  getUrlPath,
+  readByStream,
+  writeByStream,
+} from "./utils.mjs";
+import { RawPostItem } from "./PostsGenerator.mjs";
 
 export class PostsCollection {
   public static get basename() {
@@ -12,29 +20,43 @@ export class PostsCollection {
   }
 
   private data: Posts;
-  private descending: boolean;
   private path: string;
+  private options: PostsCollectionOptions;
 
-  constructor(outputDir: string, descending = false) {
+  constructor(outputDir: string, options: PostsCollectionOptions) {
     this.data = {
       buildTime: new Date(),
       posts: [],
     };
-    this.descending = descending;
     this.path = join(outputDir, PostsCollection.filename);
+    this.options = options;
   }
 
-  private sort() {
-    this.data.posts.sort((a, b) => {
-      const dateA = a?.frontMatter?.date
-        ? new Date(a?.frontMatter?.date)
-        : Date.now();
-      const dateB = b?.frontMatter?.date
-        ? new Date(b?.frontMatter?.date)
-        : Date.now();
-      const sortBy = dateA.valueOf() > dateB.valueOf();
-      return !this.descending && sortBy ? 1 : -1;
-    });
+  private processRawPostItem({
+    path,
+    hash,
+    frontMatter,
+    content,
+  }: RawPostItem): PostItem {
+    const { excerpt, baseUrl } = this.options;
+    const tag = excerpt?.tag || "<!--more-->";
+    const lines = excerpt?.lines || 5;
+    return {
+      url: getUrlPath(join(baseUrl || "", getRelativePath(path))),
+      hash,
+      frontMatter,
+      excerpt:
+        excerpt?.rule === PostsExcerptRule.CustomTag
+          ? getCustomExcerpt(content, tag)
+          : getExcerpt(content, lines),
+    };
+  }
+
+  public sort() {
+    const impl = this.options?.sort;
+    if (impl) {
+      this.data.posts.sort(impl);
+    }
   }
 
   public async save(): Promise<void> {
@@ -76,8 +98,8 @@ export class PostsCollection {
     }
   }
 
-  public collect(newItem: PostItem) {
-    this.data.posts.push(newItem);
+  public collect(newItem: RawPostItem) {
+    this.data.posts.push(this.processRawPostItem(newItem));
   }
 
   public delete(hash: string) {
@@ -87,17 +109,18 @@ export class PostsCollection {
     );
   }
 
-  public modify(newItem: PostItem, hash?: string) {
+  public modify(rawPostItem: RawPostItem, hash?: string) {
+    const postItem = this.processRawPostItem(rawPostItem);
     const target = this.data.posts.findIndex((item) => item.hash === hash);
     if (target === -1) {
-      this.collect(newItem);
+      throw new Error("Cannot find specific item in posts.json");
     } else {
-      this.data.posts[target] = { ...newItem };
+      this.data.posts[target] = { ...postItem };
     }
   }
 
-  public get posts() {
-    return [...this.data.posts];
+  public get posts(): PostItem[] {
+    return JSON.parse(JSON.stringify(this.data.posts));
   }
 }
 
@@ -115,4 +138,19 @@ export interface PostItem {
 export interface Posts {
   buildTime: Date;
   posts: PostItem[];
+}
+
+export enum PostsExcerptRule {
+  ByLines = 1,
+  CustomTag = 2,
+}
+
+export interface PostsCollectionOptions {
+  baseUrl?: string;
+  sort?: (a: PostItem, b: PostItem) => number;
+  excerpt?: {
+    rule: PostsExcerptRule;
+    lines?: number;
+    tag?: string;
+  };
 }

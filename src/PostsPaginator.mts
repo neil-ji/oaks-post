@@ -6,8 +6,8 @@ import { PostItem, PostsCollection } from "./PostsCollection.mjs";
 import { ensureFileExist, getRelativePath, getUrlPath } from "./utils.mjs";
 
 export interface PostsPaginatorOptions {
-  maxItems: number;
-  baseUrl: string;
+  itemsPerPage?: number;
+  baseUrl?: string;
   outputDir: string;
 }
 
@@ -30,14 +30,14 @@ export class PostsPaginator {
       throw new Error("Failed clear remained posts pagination file.");
     }
   }
-  private maxItems: number;
+  private itemsPerPage: number;
   private outputDir: string;
   private baseUrl: string;
 
-  constructor({ maxItems, outputDir, baseUrl }: PostsPaginatorOptions) {
-    this.maxItems = maxItems;
+  constructor({ itemsPerPage, outputDir, baseUrl }: PostsPaginatorOptions) {
+    this.itemsPerPage = itemsPerPage || 10;
     this.outputDir = outputDir;
-    this.baseUrl = baseUrl;
+    this.baseUrl = baseUrl || "";
   }
 
   private processFile = async (data: PostsPage) => {
@@ -54,8 +54,8 @@ export class PostsPaginator {
     try {
       const postGroups = [];
 
-      for (let i = 0; i < posts.length; i += this.maxItems) {
-        postGroups.push(posts.slice(i, i + this.maxItems));
+      for (let i = 0; i < posts.length; i += this.itemsPerPage) {
+        postGroups.push(posts.slice(i, i + this.itemsPerPage));
       }
 
       const postPages: PostsPage[] = postGroups.map((items, index) => {

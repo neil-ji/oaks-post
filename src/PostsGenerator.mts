@@ -1,11 +1,11 @@
 import { createWriteStream } from "fs";
 import { mkdir, rename } from "fs/promises";
-import grayMatter from "gray-matter";
-import { dirname, join, relative, resolve } from "path";
+import { dirname, join, relative } from "path";
 import { pipeline } from "stream/promises";
 import { FileNode } from "./FileTree.mjs";
 import { PostFrontMatter } from "./PostsCollection.mjs";
 import { deleteFileRecursively, readByStream } from "./utils.mjs";
+import grayMatter from "gray-matter";
 
 export class PostsGenerator {
   private inputDir: string;

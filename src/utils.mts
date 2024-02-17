@@ -20,6 +20,7 @@ import {
   sep,
 } from "node:path";
 import { pipeline } from "node:stream/promises";
+import { PostItem } from "./PostsCollection.mjs";
 
 export async function readByStream(path: string) {
   const readStream = createReadStream(path, "utf-8");
@@ -178,4 +179,65 @@ export async function deleteDir(dir: string) {
   } catch (error) {
     console.error(`Error deleting directory: ${dir}`, error);
   }
+}
+
+const sortImpl =
+  (ascending: boolean) =>
+  (propName: string, format?: (propValue: any) => any) =>
+  (cur: PostItem, next: PostItem) => {
+    const curValue = cur.frontMatter?.[propName];
+    const nextValue = next.frontMatter?.[propName];
+
+    const formattedCurValue = format ? format(curValue) : curValue;
+    const formattedNextValue = format ? format(nextValue) : nextValue;
+    if (
+      typeof formattedCurValue === "string" &&
+      typeof formattedNextValue === "string"
+    ) {
+      // Support natural language order sort.
+      const compare = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }).compare;
+      return ascending
+        ? compare(formattedCurValue, formattedNextValue)
+        : compare(formattedNextValue, formattedCurValue);
+    }
+    if (
+      formattedCurValue instanceof Date &&
+      formattedNextValue instanceof Date
+    ) {
+      return ascending
+        ? formattedCurValue.valueOf() - formattedNextValue.valueOf()
+        : formattedNextValue.valueOf() - formattedCurValue.valueOf();
+    }
+    return 0;
+  };
+
+export function sortDateAscend(
+  propName = "date",
+  format?: (propValue: any) => Date
+) {
+  return sortImpl(true)(propName, format);
+}
+
+export function sortDateDescend(
+  propName = "date",
+  format?: (propValue: any) => Date
+) {
+  return sortImpl(false)(propName, format);
+}
+
+export function sortLexOrderAscend(
+  propName = "title",
+  format?: (propValue: any) => string
+) {
+  return sortImpl(true)(propName, format);
+}
+
+export function sortLexOrderDescend(
+  propName = "title",
+  format?: (propValue: any) => string
+) {
+  return sortImpl(false)(propName, format);
 }
