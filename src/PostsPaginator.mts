@@ -12,6 +12,7 @@ export interface PostsPaginatorOptions {
 }
 
 export interface PostsPage {
+  pages: number;
   current: number;
   posts: PostItem[];
   prev?: string;
@@ -62,6 +63,7 @@ export class PostsPaginator {
         const current = index + 1;
         const directorySegment = getRelativePath(this.outputDir);
         return {
+          pages: postGroups.length,
           current,
           posts: items,
           prev:
