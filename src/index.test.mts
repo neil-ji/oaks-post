@@ -18,7 +18,7 @@ const posts = new PostsManager({
     rule: PostsExcerptRule.CustomTag,
     tag: "<!--YOUR_TAG-->",
   },
-  // itemsPerPage: 3,
+  itemsPerPage: 3,
   sort: sortLexOrderDescend(),
 });
 

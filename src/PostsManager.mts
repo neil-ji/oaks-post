@@ -118,7 +118,8 @@ export class PostsManager {
     await this.collection.load();
 
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
-    const changes = await new FileTree(this.inputDir, this.outputDir).compare();
+    const fileTree = new FileTree(this.inputDir, this.outputDir);
+    const changes = await fileTree.compare();
 
     // 3. Handle all changes.
     if (changes.length > 0) {
@@ -131,8 +132,7 @@ export class PostsManager {
 
     // 4. Paginate.
     await PostsPaginator.clean(this.databaseDir);
-
-    this.paginator?.paginate(this.collection.posts);
+    await this.paginator?.paginate(this.collection.posts);
   }
 
   public async clean() {
