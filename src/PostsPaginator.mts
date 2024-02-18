@@ -20,7 +20,7 @@ export interface PostsPage {
 }
 
 export class PostsPaginator {
-  public static async clear(dir: string) {
+  public static async clean(dir: string) {
     try {
       const files = await readdir(dir);
       const postPages = files.filter((file) => {
