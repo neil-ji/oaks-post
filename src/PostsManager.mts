@@ -130,7 +130,7 @@ export class PostsManager {
     }
 
     // 4. Paginate.
-    await PostsPaginator.clear(this.outputDir);
+    await PostsPaginator.clear(this.databaseDir);
 
     this.paginator?.paginate(this.collection.posts);
   }
