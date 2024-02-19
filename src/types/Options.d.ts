@@ -3,36 +3,47 @@ import { PostItem } from "./Posts";
 export enum PostsExcerptRule {
   ByLines = 1,
   CustomTag = 2,
+  NoContent = 3,
+  FullContent = 4,
 }
 
-// PostsCollection
-export interface PostsCollectionOptions {
-  baseUrl?: string;
+export interface PostsExcerptOptions {
+  rule: PostsExcerptRule;
+  lines?: number;
+  tag?: string;
+}
+
+/** Common List Interface */
+
+interface PostsListBase {
   sort?: (a: PostItem, b: PostItem) => number;
-  excerpt?: {
-    rule: PostsExcerptRule;
-    lines?: number;
-    tag?: string;
-  };
+  excerpt?: PostsExcerptOptions;
+  itemsPerPage?: number;
+  outputDir?: string;
 }
 
-// PostsTagger
-export interface PostsTaggerOptions {
-  outputDir: string;
-  baseUrl: string;
+/** PostsCollection */
+export interface PostsCollectionOptions extends PostsListBase {}
+
+/** PostsTagger */
+export interface PostsTaggerOptions extends PostsListBase {
   propName?: string;
 }
 
-// PostsPaginator
+/** PostsPaginator */
 export interface PostsPaginatorOptions {
-  itemsPerPage?: number;
-  baseUrl?: string;
   outputDir: string;
+  itemsPerPage: number;
+  baseUrl: string;
 }
 
-// PostsManager
-export interface PostsManagerOptions extends PostsCollectionOptions {
+/** PostsManager */
+export interface PostsManagerOptions {
   inputDir: string;
   outputDir: string;
-  itemsPerPage?: number;
+  baseUrl?: string;
+  collections?: PostsCollectionOptions;
+  tags?: PostsTaggerOptions;
+  // archives?: PostsArchiveOptions;
+  // categories?: PostsCategoryOptions;
 }

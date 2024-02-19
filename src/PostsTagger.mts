@@ -1,9 +1,10 @@
 import { readdir, rm } from "fs/promises";
 import { join } from "path";
 import { PostItem, PostsTaggerOptions, PostFrontMatter } from "./types";
+import { deleteDir } from "./utils.mjs";
 
 export class PostsTagger {
-  public static get dirname() {
+  public static get basename() {
     return "tags";
   }
   public static async clean(dir: string) {
@@ -18,24 +19,21 @@ export class PostsTagger {
     // }
   }
 
-  private outputDir: string;
+  private options: PostsTaggerOptions;
   private baseUrl: string;
-  private propName: string;
   private tags: Map<string, PostItem[]>;
+  private path: string;
 
-  constructor({ outputDir, baseUrl, propName = "tag" }: PostsTaggerOptions) {
-    this.outputDir = join(outputDir, PostsTagger.dirname);
+  constructor(options: PostsTaggerOptions, baseUrl: string) {
+    this.options = options;
+    this.path = join(options.outputDir!, PostsTagger.basename);
     this.baseUrl = baseUrl;
     this.tags = new Map();
-    this.propName = propName;
   }
 
-  private getTags(frontMatter: PostFrontMatter): undefined | string[] {
-    return;
-  }
-
-  public collect(newItem: PostItem) {
-    const tags: string[] | undefined = newItem.frontMatter?.[this.propName];
+  private collect(newItem: PostItem) {
+    const tags: string[] | undefined =
+      newItem.frontMatter?.[this.options.propName!];
     if (!tags) return;
 
     tags.forEach((tag) => {
@@ -48,14 +46,23 @@ export class PostsTagger {
     });
   }
 
-  public clean() {
-    this.tags.clear();
-  }
-
-  public save() {
+  private save() {
     try {
+      // 数据转换
+      // 判断目录存在
+      // 持久化
+      // 分页
     } catch (error) {
       console.error("Failed analyze tags of posts.", error);
     }
+  }
+
+  public start = async (posts: PostItem[]) => {
+    posts.forEach(this.collect);
+    await this.save();
+  };
+
+  public async clean() {
+    await deleteDir(this.options.outputDir!);
   }
 }

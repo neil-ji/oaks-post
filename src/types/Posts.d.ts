@@ -28,3 +28,9 @@ export interface PostsPage {
   prev?: string;
   next?: string;
 }
+
+export interface PostTagItem {
+  tag: string;
+  totals: number;
+  postsUrl: string;
+}

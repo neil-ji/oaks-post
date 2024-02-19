@@ -7,17 +7,6 @@ import { ensureFileExist, getRelativePath, getUrlPath } from "./utils.mjs";
 import { PostItem, PostsPage, PostsPaginatorOptions } from "./types";
 
 export class PostsPaginator {
-  public static async clean(dir: string) {
-    try {
-      const files = await readdir(dir);
-      const postPages = files.filter((file) => {
-        return file.match(/^posts_\d+\.json$/);
-      });
-      await Promise.all(postPages.map((file) => rm(join(dir, file))));
-    } catch (error) {
-      throw new Error("Failed clear remained posts pagination file.");
-    }
-  }
   private itemsPerPage: number;
   private outputDir: string;
   private baseUrl: string;
@@ -25,7 +14,7 @@ export class PostsPaginator {
   constructor({ itemsPerPage, outputDir, baseUrl }: PostsPaginatorOptions) {
     this.itemsPerPage = itemsPerPage || 10;
     this.outputDir = outputDir;
-    this.baseUrl = baseUrl || "";
+    this.baseUrl = baseUrl;
   }
 
   private processFile = async (data: PostsPage) => {
@@ -38,7 +27,22 @@ export class PostsPaginator {
     return pipeline(JSON.stringify(data, null, 0), writeStream);
   };
 
-  public paginate = async (posts: PostItem[]) => {
+  public async clean(prefix: string) {
+    try {
+      const files = await readdir(this.outputDir);
+      const filesRegExp = new RegExp(`^${prefix}_\d+\.json$`);
+      const postPages = files.filter((file) => {
+        return file.match(filesRegExp);
+      });
+      await Promise.all(
+        postPages.map((file) => rm(join(this.outputDir, file)))
+      );
+    } catch (error) {
+      throw new Error("Failed clear remained posts pagination file.");
+    }
+  }
+
+  public start = async (posts: PostItem[]) => {
     try {
       const postGroups = [];
 

@@ -2,7 +2,7 @@ import { createWriteStream } from "fs";
 import { mkdir, rename } from "fs/promises";
 import { dirname, join, relative } from "path";
 import { pipeline } from "stream/promises";
-import { deleteFileRecursively, readByStream } from "./utils.mjs";
+import { deleteDir, deleteFileRecursively, readByStream } from "./utils.mjs";
 import grayMatter from "gray-matter";
 import { FileNode, RawPostItem } from "./types";
 
@@ -11,8 +11,8 @@ export class PostsGenerator {
   private outputDir: string;
 
   constructor(inputDir: string, outputDir: string) {
-    this.outputDir = outputDir;
     this.inputDir = inputDir;
+    this.outputDir = outputDir;
   }
 
   private getParentDir(path: string): string {
@@ -81,5 +81,9 @@ export class PostsGenerator {
       console.error("Error: failed update post_[hash]_[key].json", error);
       process.exit(1);
     }
+  }
+
+  public async clean() {
+    await deleteDir(this.outputDir);
   }
 }

@@ -1,6 +1,7 @@
 import { access, writeFile } from "fs/promises";
 import { join } from "path";
 import {
+  deleteDir,
   getCustomExcerpt,
   getExcerpt,
   getRelativePath,
@@ -15,6 +16,7 @@ import {
   PostsExcerptRule,
   RawPostItem,
 } from "./types";
+import { PostsPaginator } from "./PostsPaginator.mjs";
 
 export class PostsCollection {
   public static get basename() {
@@ -28,14 +30,16 @@ export class PostsCollection {
   private data: Posts;
   private path: string;
   private options: PostsCollectionOptions;
+  private baseUrl: string;
 
-  constructor(outputDir: string, options: PostsCollectionOptions) {
+  constructor(options: PostsCollectionOptions, baseUrl: string) {
     this.data = {
       buildTime: new Date(),
       posts: [],
     };
-    this.path = join(outputDir, PostsCollection.filename);
     this.options = options;
+    this.path = join(options.outputDir!, PostsCollection.filename);
+    this.baseUrl = baseUrl;
   }
 
   private processRawPostItem({
@@ -44,11 +48,11 @@ export class PostsCollection {
     frontMatter,
     content,
   }: RawPostItem): PostItem {
-    const { excerpt, baseUrl } = this.options;
+    const { excerpt } = this.options;
     const tag = excerpt?.tag || "<!--more-->";
     const lines = excerpt?.lines || 5;
     return {
-      url: getUrlPath(join(baseUrl || "", getRelativePath(path))),
+      url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
       hash,
       frontMatter,
       excerpt:
@@ -59,14 +63,26 @@ export class PostsCollection {
   }
 
   public sort() {
-    const impl = this.options?.sort;
-    if (impl) {
-      this.data.posts.sort(impl);
+    const sortImpl = this.options.sort;
+    if (sortImpl) {
+      this.data.posts.sort(sortImpl);
     }
   }
 
   public async save(): Promise<void> {
     await writeByStream(this.path, JSON.stringify(this.data, null, 0));
+
+    // Paginate
+    const { itemsPerPage } = this.options;
+    if (itemsPerPage) {
+      const paginator = new PostsPaginator({
+        itemsPerPage,
+        outputDir: this.path,
+        baseUrl: this.baseUrl,
+      });
+      await paginator.clean(PostsCollection.basename);
+      await paginator.start(this.posts);
+    }
   }
 
   public async init(): Promise<void> {
@@ -115,17 +131,22 @@ export class PostsCollection {
     );
   }
 
-  public modify(rawPostItem: RawPostItem, hash?: string) {
-    const postItem = this.processRawPostItem(rawPostItem);
+  public modify(newItem: RawPostItem, hash?: string) {
     const target = this.data.posts.findIndex((item) => item.hash === hash);
     if (target === -1) {
-      throw new Error("Cannot find specific item in posts.json");
+      throw new Error(
+        "Failed modify post item.\nDetails: Cannot find specific item in posts.json"
+      );
     } else {
-      this.data.posts[target] = { ...postItem };
+      this.data.posts[target] = this.processRawPostItem(newItem);
     }
   }
 
   public get posts(): PostItem[] {
     return JSON.parse(JSON.stringify(this.data.posts));
+  }
+
+  public async clean() {
+    await deleteDir(this.options.outputDir!);
   }
 }

@@ -7,25 +7,35 @@ import {
   deleteDir,
   ensureDirExisted,
   generateUniqueHash,
+  getCustomExcerpt,
+  getExcerpt,
+  getRelativePath,
+  getUrlPath,
   normalizePath,
 } from "./utils.mjs";
-import { PostsManagerOptions, Change } from "./types";
+import {
+  PostsManagerOptions,
+  Change,
+  PostItem,
+  PostsExcerptRule,
+  RawPostItem,
+} from "./types";
+import { join } from "path";
+import { PostsTagger } from "./PostsTagger.mjs";
 
 export class PostsManager {
   private collection: PostsCollection;
   private generator: PostsGenerator;
-  private paginator?: PostsPaginator;
+  private tagger?: PostsTagger;
   private inputDir: string;
   private outputDir: string;
-  private databaseDir: string;
 
   constructor({
     inputDir,
     outputDir,
-    baseUrl,
-    itemsPerPage,
-    sort,
-    excerpt,
+    baseUrl = "",
+    collections,
+    tags,
   }: PostsManagerOptions) {
     // Validate input
     if (inputDir === "") {
@@ -46,26 +56,43 @@ export class PostsManager {
     // Normalize input
     const normalizedInputDir = normalizePath(inputDir);
     const normalizedOutputDir = normalizePath(outputDir);
-    const databaseDir = `${normalizedOutputDir}_database`;
+    const defaultExcerptOptions = {
+      rule: PostsExcerptRule.ByLines,
+      lines: 5,
+      tag: "<!--more-->",
+    };
 
     this.inputDir = normalizedInputDir;
     this.outputDir = normalizedOutputDir;
-    this.databaseDir = databaseDir;
-    this.collection = new PostsCollection(databaseDir, {
-      baseUrl,
-      sort,
-      excerpt,
-    });
+
+    this.collection = new PostsCollection(
+      {
+        outputDir: `${normalizedOutputDir}_${PostsCollection.basename}`,
+        ...collections,
+        excerpt: {
+          ...defaultExcerptOptions,
+          ...collections?.excerpt,
+        },
+      },
+      baseUrl
+    );
     this.generator = new PostsGenerator(
       normalizedInputDir,
       normalizedOutputDir
     );
-    if (itemsPerPage !== undefined) {
-      this.paginator = new PostsPaginator({
-        itemsPerPage,
-        outputDir: databaseDir,
-        baseUrl,
-      });
+    if (tags) {
+      this.tagger = new PostsTagger(
+        {
+          outputDir: `${normalizedOutputDir}_${PostsTagger.basename}`,
+          propName: tags.propName || "tag",
+          ...tags,
+          excerpt: {
+            ...defaultExcerptOptions,
+            ...tags?.excerpt,
+          },
+        },
+        baseUrl
+      );
     }
   }
 
@@ -95,9 +122,10 @@ export class PostsManager {
     }
   }
 
-  private async clearAll() {
-    await deleteDir(this.outputDir);
-    await deleteDir(this.databaseDir);
+  public async clean() {
+    this.generator.clean();
+    this.collection.clean();
+    this.tagger?.clean();
   }
 
   public async start() {
@@ -108,11 +136,10 @@ export class PostsManager {
       throw new Error("Make sure that inputDir was existed.");
     }
     await ensureDirExisted(this.outputDir);
-    await ensureDirExisted(this.databaseDir);
 
     // 1. Clear all json files if posts.json hasn't existed.
     if (!(await this.collection.hasExisted())) {
-      await this.clearAll();
+      await this.clean();
       await this.collection.init();
     }
     await this.collection.load();
@@ -130,19 +157,7 @@ export class PostsManager {
       console.log("Files have no changes.");
     }
 
-    // 4. Paginate.
-    await PostsPaginator.clean(this.databaseDir);
-    await this.paginator?.paginate(this.collection.posts);
-
-    // 5. Process tag.
-  }
-
-  public async clean() {
-    console.log(
-      "Clean all files in the paths:",
-      this.outputDir,
-      this.databaseDir
-    );
-    await this.clearAll();
+    // 4. Process tag.
+    this.tagger?.start(this.collection.posts);
   }
 }

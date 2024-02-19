@@ -3,6 +3,7 @@ export {
   PostFrontMatter,
   PostItem,
   Posts,
+  PostsExcerptOptions,
   PostsExcerptRule,
   PostsPage,
 } from "./types";
