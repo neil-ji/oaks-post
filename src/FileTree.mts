@@ -2,6 +2,7 @@ import { readdir, stat } from "fs/promises";
 import { join } from "node:path";
 import { basename, extname } from "path";
 import { calculateHash, readByStream } from "./utils.mjs";
+import { Change, ChangeType, FileNode } from "./types";
 
 export class FileTree {
   private markdownDirectory: string;
@@ -70,7 +71,9 @@ export class FileTree {
 
       return root;
     } catch (error: any) {
-      console.error(`Failed build file tree: ${path}\nDetails: ${error.message}`);
+      console.error(
+        `Failed build file tree: ${path}\nDetails: ${error.message}`
+      );
       process.exit(1);
     }
   }
@@ -147,24 +150,4 @@ export class FileTree {
     const jsonTree = await this.buildTree(this.jsonDirectory);
     return this.equalTree(markdownTree, jsonTree);
   }
-}
-
-export interface FileNode {
-  key: string; // primary key is the basename of file(without extname) or directory.
-  path: string;
-  parent: FileNode | null;
-  hash?: string;
-  children?: FileNode[];
-}
-
-export enum ChangeType {
-  Delete = "Delete",
-  Create = "Create",
-  Modify = "Modify",
-}
-
-export interface Change {
-  markdown?: FileNode;
-  json?: FileNode;
-  type: ChangeType;
 }

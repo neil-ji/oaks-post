@@ -2,10 +2,9 @@ import { createWriteStream } from "fs";
 import { mkdir, rename } from "fs/promises";
 import { dirname, join, relative } from "path";
 import { pipeline } from "stream/promises";
-import { FileNode } from "./FileTree.mjs";
-import { PostFrontMatter } from "./PostsCollection.mjs";
 import { deleteFileRecursively, readByStream } from "./utils.mjs";
 import grayMatter from "gray-matter";
+import { FileNode, RawPostItem } from "./types";
 
 export class PostsGenerator {
   private inputDir: string;
@@ -83,11 +82,4 @@ export class PostsGenerator {
       process.exit(1);
     }
   }
-}
-
-export interface RawPostItem {
-  path: string;
-  hash: string;
-  frontMatter: PostFrontMatter;
-  content: string;
 }

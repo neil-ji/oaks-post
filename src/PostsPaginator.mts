@@ -2,22 +2,9 @@ import { createWriteStream } from "fs";
 import { readdir, rm } from "fs/promises";
 import { join } from "path";
 import { pipeline } from "stream/promises";
-import { PostItem, PostsCollection } from "./PostsCollection.mjs";
+import { PostsCollection } from "./PostsCollection.mjs";
 import { ensureFileExist, getRelativePath, getUrlPath } from "./utils.mjs";
-
-export interface PostsPaginatorOptions {
-  itemsPerPage?: number;
-  baseUrl?: string;
-  outputDir: string;
-}
-
-export interface PostsPage {
-  pages: number;
-  current: number;
-  posts: PostItem[];
-  prev?: string;
-  next?: string;
-}
+import { PostItem, PostsPage, PostsPaginatorOptions } from "./types";
 
 export class PostsPaginator {
   public static async clean(dir: string) {

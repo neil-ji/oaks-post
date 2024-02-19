@@ -8,7 +8,13 @@ import {
   readByStream,
   writeByStream,
 } from "./utils.mjs";
-import { RawPostItem } from "./PostsGenerator.mjs";
+import {
+  Posts,
+  PostsCollectionOptions,
+  PostItem,
+  PostsExcerptRule,
+  RawPostItem,
+} from "./types";
 
 export class PostsCollection {
   public static get basename() {
@@ -122,35 +128,4 @@ export class PostsCollection {
   public get posts(): PostItem[] {
     return JSON.parse(JSON.stringify(this.data.posts));
   }
-}
-
-export interface PostFrontMatter {
-  [key: string]: any;
-}
-
-export interface PostItem {
-  hash?: string;
-  url?: string;
-  frontMatter?: PostFrontMatter;
-  excerpt?: string;
-}
-
-export interface Posts {
-  buildTime: Date;
-  posts: PostItem[];
-}
-
-export enum PostsExcerptRule {
-  ByLines = 1,
-  CustomTag = 2,
-}
-
-export interface PostsCollectionOptions {
-  baseUrl?: string;
-  sort?: (a: PostItem, b: PostItem) => number;
-  excerpt?: {
-    rule: PostsExcerptRule;
-    lines?: number;
-    tag?: string;
-  };
 }

@@ -1,7 +1,6 @@
 import { access } from "fs/promises";
-
-import { Change, FileTree } from "./FileTree.mjs";
-import { PostsCollection, PostsCollectionOptions } from "./PostsCollection.mjs";
+import { FileTree } from "./FileTree.mjs";
+import { PostsCollection } from "./PostsCollection.mjs";
 import { PostsGenerator } from "./PostsGenerator.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 import {
@@ -10,6 +9,7 @@ import {
   generateUniqueHash,
   normalizePath,
 } from "./utils.mjs";
+import { PostsManagerOptions, Change } from "./types";
 
 export class PostsManager {
   private collection: PostsCollection;
@@ -133,6 +133,8 @@ export class PostsManager {
     // 4. Paginate.
     await PostsPaginator.clean(this.databaseDir);
     await this.paginator?.paginate(this.collection.posts);
+
+    // 5. Process tag.
   }
 
   public async clean() {
@@ -143,10 +145,4 @@ export class PostsManager {
     );
     await this.clearAll();
   }
-}
-
-export interface PostsManagerOptions extends PostsCollectionOptions {
-  inputDir: string;
-  outputDir: string;
-  itemsPerPage?: number;
 }

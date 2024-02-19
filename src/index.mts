@@ -4,8 +4,8 @@ export {
   PostItem,
   Posts,
   PostsExcerptRule,
-} from "./PostsCollection.mjs";
-export { PostsPage } from "./PostsPaginator.mjs";
+  PostsPage,
+} from "./types";
 export {
   sortDateAscend,
   sortDateDescend,

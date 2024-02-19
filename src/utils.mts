@@ -20,7 +20,7 @@ import {
   sep,
 } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { PostItem } from "./PostsCollection.mjs";
+import { PostItem } from "./types";
 
 export async function readByStream(path: string) {
   const readStream = createReadStream(path, "utf-8");
