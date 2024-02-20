@@ -2,12 +2,22 @@ import { join } from "path";
 import {
   PostItem,
   PostsTaggerOptions,
-  PostFrontMatter,
   PostTagItem,
+  RawPostItem,
+  PostsExcerptRule,
 } from "./types/index.mjs";
-import { deleteDir, writeByStream } from "./utils.mjs";
+import {
+  deleteDir,
+  getCustomExcerpt,
+  getExcerpt,
+  getRelativePath,
+  getUrlPath,
+  readByStream,
+  writeByStream,
+} from "./utils.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 import { PostsCollection } from "./PostsCollection.mjs";
+import { access, writeFile } from "fs/promises";
 
 export class PostsTagger {
   public static get basename() {
@@ -30,7 +40,28 @@ export class PostsTagger {
     this.tagsMap = new Map();
   }
 
-  private collect(newItem: PostItem) {
+  private processRawPostItem({
+    path,
+    hash,
+    frontMatter,
+    content,
+  }: RawPostItem): PostItem {
+    const { excerpt } = this.options;
+    const tag = excerpt?.tag || "<!--more-->";
+    const lines = excerpt?.lines || 5;
+    return {
+      url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
+      hash,
+      frontMatter,
+      excerpt:
+        excerpt?.rule === PostsExcerptRule.CustomTag
+          ? getCustomExcerpt(content, tag)
+          : getExcerpt(content, lines),
+    };
+  }
+
+  public collect(rawItem: RawPostItem) {
+    const newItem = this.processRawPostItem(rawItem);
     const tags: string[] | undefined =
       newItem.frontMatter?.[this.options.propName!];
     if (!tags) return;
@@ -43,6 +74,40 @@ export class PostsTagger {
         this.tagsMap.set(tag, [newItem]);
       }
     });
+  }
+
+  public delete(hash?: string) {
+    const tags: string[] = [];
+    for (const posts of this.tagsMap.values()) {
+      const target = posts.find((item) => item.hash === hash);
+      const targetTags = target?.frontMatter?.[this.options.propName!];
+      tags.push(...targetTags);
+    }
+
+    const deletedTags: string[] = [];
+    tags.forEach((tag) => {
+      const posts = this.tagsMap.get(tag);
+      if (!posts) return;
+
+      const target = posts.findIndex((item) => item.hash === hash);
+      if (target === -1) return;
+
+      posts.splice(target, 1);
+
+      // Collect tag which doesn't map any posts, and delete them later.
+      if (posts.length === 0) {
+        deletedTags.push(tag);
+      }
+    });
+
+    deletedTags.forEach((tag) => {
+      this.tagsMap.delete(tag);
+    });
+  }
+
+  public modify(rawItem: RawPostItem, hash?: string) {
+    this.delete(hash);
+    this.collect(rawItem);
   }
 
   private async paginate(posts: PostItem[], tag: string) {
@@ -60,7 +125,7 @@ export class PostsTagger {
     return [];
   }
 
-  private async save() {
+  public async save() {
     try {
       // Convert data
       const rawTags = this.tagsMap.entries();
@@ -76,17 +141,10 @@ export class PostsTagger {
 
       // Save
       await writeByStream(this.path, tagsJson);
-
-      console.log("Successful process tags.");
     } catch (error) {
       throw console.error("Failed analyze tags of posts.", error);
     }
   }
-
-  public start = async (posts: PostItem[]) => {
-    posts.forEach((post) => this.collect(post));
-    await this.save();
-  };
 
   public async clean() {
     await deleteDir(this.options.outputDir!);
@@ -94,5 +152,34 @@ export class PostsTagger {
 
   public get outputDir() {
     return this.options.outputDir!;
+  }
+
+  public async init(): Promise<void> {
+    try {
+      const defaultData: PostTagItem[] = [];
+      await writeFile(this.path, JSON.stringify(defaultData, null, 0));
+    } catch (error) {
+      console.error(`Failed create ${PostsTagger.filename}`, error);
+    }
+  }
+
+  public async hasExisted(): Promise<boolean> {
+    try {
+      await access(this.path);
+    } catch {
+      return false;
+    }
+    return true;
+  }
+
+  public async load(): Promise<void> {
+    try {
+      const tags: PostTagItem[] = JSON.parse(await readByStream(this.path));
+      tags.forEach((item) => {
+        this.tagsMap.set(item.tag, item.posts);
+      });
+    } catch (error) {
+      console.error(`Failed load ${PostsTagger.filename}`, error);
+    }
   }
 }

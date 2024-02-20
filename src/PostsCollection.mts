@@ -107,7 +107,7 @@ export class PostsCollection {
         )
       );
     } catch (error) {
-      console.error("Failed create posts.json file.", error);
+      console.error(`Failed create ${PostsCollection.filename}`, error);
     }
   }
 
@@ -132,7 +132,7 @@ export class PostsCollection {
     this.data.posts.push(this.processRawPostItem(newItem));
   }
 
-  public delete(hash: string) {
+  public delete(hash?: string) {
     this.data.posts.splice(
       this.data.posts.findIndex((item) => item.hash === hash),
       1

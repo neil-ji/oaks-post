@@ -105,18 +105,21 @@ export class PostsManager {
     if (!json) return;
     const hash = await this.generator.delete(json);
     this.collection.delete(hash);
+    this.tagger?.delete(hash);
   }
 
   private async handleCreate({ markdown }: Change) {
     if (!markdown) return;
     const rawPost = await this.generator.create(markdown);
     this.collection.collect(rawPost);
+    this.tagger?.collect(rawPost);
   }
 
   private async handleModify(change: Required<Change>) {
     const { json, markdown } = change;
     const rawPost = await this.generator.modify(markdown, json.path);
     this.collection.modify(rawPost, json.hash);
+    this.tagger?.modify(rawPost, json.hash);
   }
 
   private async handleChanges(changes: Change[]) {
@@ -146,15 +149,22 @@ export class PostsManager {
         "Make sure that inputDir which storages your markdown files was existed."
       );
     }
+    await ensureDirExisted(this.collection.outputDir);
+    if (this.tagger) {
+      await ensureDirExisted(this.tagger.outputDir);
+    }
 
     // 1. Clear all json files if posts.json hasn't existed.
-    await ensureDirExisted(this.collection.outputDir);
+    const collectionExist = await this.collection.hasExisted();
+    const tagsExist = this.tagger && (await this.tagger.hasExisted());
 
-    if (!(await this.collection.hasExisted())) {
+    if (!collectionExist || !tagsExist) {
       await this.clean();
       await this.collection.init();
+      await this.tagger?.init();
     }
     await this.collection.load();
+    await this.tagger?.load();
 
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
     const fileTree = new FileTree(this.inputDir, this.outputDir);
@@ -164,16 +174,9 @@ export class PostsManager {
     if (changes.length > 0) {
       await this.handleChanges(changes);
       await this.collection.save();
+      await this.tagger?.save();
     } else {
       console.log("Files have no changes.");
-    }
-
-    // 4. Analyze all tags.
-    if (this.tagger) {
-      // Check existence of tags directory
-      await ensureDirExisted(this.tagger.outputDir);
-      await this.tagger.clean();
-      await this.tagger.start(this.collection.posts);
     }
   }
 }
