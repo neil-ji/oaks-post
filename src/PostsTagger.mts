@@ -76,8 +76,10 @@ export class PostsTagger {
 
       // Save
       await writeByStream(this.path, tagsJson);
+
+      console.log("Successful process tags.");
     } catch (error) {
-      console.error("Failed analyze tags of posts.", error);
+      throw console.error("Failed analyze tags of posts.", error);
     }
   }
 

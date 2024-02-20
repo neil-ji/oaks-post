@@ -172,6 +172,7 @@ export class PostsManager {
     if (this.tagger) {
       // Check existence of tags directory
       await ensureDirExisted(this.tagger.outputDir);
+      await this.tagger.clean();
       await this.tagger.start(this.collection.posts);
     }
   }
