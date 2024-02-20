@@ -15,7 +15,7 @@ import {
   PostItem,
   PostsExcerptRule,
   RawPostItem,
-} from "./types";
+} from "./types/index.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 
 export class PostsCollection {

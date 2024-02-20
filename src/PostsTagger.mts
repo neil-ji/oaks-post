@@ -4,7 +4,7 @@ import {
   PostsTaggerOptions,
   PostFrontMatter,
   PostTagItem,
-} from "./types";
+} from "./types/index.mjs";
 import { deleteDir, writeByStream } from "./utils.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 import { PostsCollection } from "./PostsCollection.mjs";

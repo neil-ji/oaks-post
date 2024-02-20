@@ -6,7 +6,7 @@ export {
   PostsExcerptOptions,
   PostsExcerptRule,
   PostsPage,
-} from "./types";
+} from "./types/index.mjs";
 export {
   sortDateAscend,
   sortDateDescend,

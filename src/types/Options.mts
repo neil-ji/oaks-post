@@ -1,4 +1,4 @@
-import { PostItem } from "./Posts";
+import { PostItem } from "./Posts.mjs";
 
 export enum PostsExcerptRule {
   ByLines = 1,

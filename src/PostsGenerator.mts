@@ -4,7 +4,7 @@ import { dirname, join, relative } from "path";
 import { pipeline } from "stream/promises";
 import { deleteDir, deleteFileRecursively, readByStream } from "./utils.mjs";
 import grayMatter from "gray-matter";
-import { FileNode, PostsGeneratorOptions, RawPostItem } from "./types";
+import { FileNode, PostsGeneratorOptions, RawPostItem } from "./types/index.mjs";
 
 export class PostsGenerator {
   private options: PostsGeneratorOptions;

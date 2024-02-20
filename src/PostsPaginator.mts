@@ -3,7 +3,7 @@ import { readdir, rm } from "fs/promises";
 import { join } from "path";
 import { pipeline } from "stream/promises";
 import { ensureFileExist, getRelativePath, getUrlPath } from "./utils.mjs";
-import { PostItem, PostsPage, PostsPaginatorOptions } from "./types";
+import { PostItem, PostsPage, PostsPaginatorOptions } from "./types/index.mjs";
 
 export class PostsPaginator {
   private itemsPerPage: number;

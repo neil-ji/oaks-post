@@ -19,7 +19,7 @@ import {
   PostItem,
   PostsExcerptRule,
   RawPostItem,
-} from "./types";
+} from "./types/index.mjs";
 import { join } from "path";
 import { PostsTagger } from "./PostsTagger.mjs";
 

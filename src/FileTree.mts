@@ -2,7 +2,7 @@ import { readdir, stat } from "fs/promises";
 import { join } from "node:path";
 import { basename, extname } from "path";
 import { calculateHash, readByStream } from "./utils.mjs";
-import { Change, ChangeType, FileNode } from "./types";
+import { Change, ChangeType, FileNode } from "./types/index.mjs";
 
 export class FileTree {
   private markdownDirectory: string;
