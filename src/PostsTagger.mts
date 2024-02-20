@@ -81,7 +81,9 @@ export class PostsTagger {
     for (const posts of this.tagsMap.values()) {
       const target = posts.find((item) => item.hash === hash);
       const targetTags = target?.frontMatter?.[this.options.propName!];
-      tags.push(...targetTags);
+      if (targetTags) {
+        tags.push(...targetTags);
+      }
     }
 
     const deletedTags: string[] = [];
@@ -119,7 +121,7 @@ export class PostsTagger {
         baseUrl: this.baseUrl,
         prefix: `${PostsCollection.basename}_${tag}`,
       });
-      await paginator.clean();
+      // await paginator.clean();
       return paginator.start(posts);
     }
     return [];
@@ -147,7 +149,7 @@ export class PostsTagger {
   }
 
   public async clean() {
-    await deleteDir(this.options.outputDir!);
+    await deleteDir(this.outputDir);
   }
 
   public get outputDir() {

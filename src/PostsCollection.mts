@@ -95,17 +95,11 @@ export class PostsCollection {
 
   public async init(): Promise<void> {
     try {
-      await writeFile(
-        this.path,
-        JSON.stringify(
-          {
-            buildTime: new Date(),
-            posts: [],
-          },
-          null,
-          0
-        )
-      );
+      const defaultData: Posts = {
+        posts: [],
+        postsPages: [],
+      };
+      await writeFile(this.path, JSON.stringify(defaultData, null, 0));
     } catch (error) {
       console.error(`Failed create ${PostsCollection.filename}`, error);
     }
@@ -159,6 +153,6 @@ export class PostsCollection {
   }
 
   public async clean() {
-    await deleteDir(this.options.outputDir!);
+    await deleteDir(this.outputDir);
   }
 }

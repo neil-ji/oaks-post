@@ -135,9 +135,11 @@ export class PostsManager {
   }
 
   public async clean() {
-    this.generator.clean();
-    this.collection.clean();
-    this.tagger?.clean();
+    return Promise.all([
+      this.generator.clean(),
+      this.collection.clean(),
+      this.tagger?.clean(),
+    ]);
   }
 
   public async start() {
