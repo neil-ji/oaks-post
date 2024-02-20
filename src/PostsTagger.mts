@@ -1,34 +1,33 @@
-import { readdir, rm } from "fs/promises";
 import { join } from "path";
-import { PostItem, PostsTaggerOptions, PostFrontMatter } from "./types";
-import { deleteDir } from "./utils.mjs";
+import {
+  PostItem,
+  PostsTaggerOptions,
+  PostFrontMatter,
+  PostTagItem,
+} from "./types";
+import { deleteDir, writeByStream } from "./utils.mjs";
+import { PostsPaginator } from "./PostsPaginator.mjs";
+import { PostsCollection } from "./PostsCollection.mjs";
 
 export class PostsTagger {
   public static get basename() {
     return "tags";
   }
-  public static async clean(dir: string) {
-    // try {
-    //   const files = await readdir(dir);
-    //   const postPages = files.filter((file) => {
-    //     return file.match(/^posts_tag\d+\.json$/);
-    //   });
-    //   await Promise.all(postPages.map((file) => rm(join(dir, file))));
-    // } catch (error) {
-    //   throw new Error("Failed clear remained posts pagination file.");
-    // }
+
+  public static get filename() {
+    return `${this.basename}.json`;
   }
 
   private options: PostsTaggerOptions;
   private baseUrl: string;
-  private tags: Map<string, PostItem[]>;
+  private tagsMap: Map<string, PostItem[]>;
   private path: string;
 
   constructor(options: PostsTaggerOptions, baseUrl: string) {
     this.options = options;
-    this.path = join(options.outputDir!, PostsTagger.basename);
+    this.path = join(options.outputDir!, PostsTagger.filename);
     this.baseUrl = baseUrl;
-    this.tags = new Map();
+    this.tagsMap = new Map();
   }
 
   private collect(newItem: PostItem) {
@@ -37,21 +36,46 @@ export class PostsTagger {
     if (!tags) return;
 
     tags.forEach((tag) => {
-      if (this.tags.has(tag)) {
-        const posts = this.tags.get(tag)!;
+      if (this.tagsMap.has(tag)) {
+        const posts = this.tagsMap.get(tag)!;
         posts.push(newItem);
       } else {
-        this.tags.set(tag, [newItem]);
+        this.tagsMap.set(tag, [newItem]);
       }
     });
   }
 
-  private save() {
+  private async paginate(posts: PostItem[], tag: string) {
+    const { itemsPerPage } = this.options;
+    if (itemsPerPage) {
+      const paginator = new PostsPaginator({
+        itemsPerPage,
+        outputDir: this.options.outputDir!,
+        baseUrl: this.baseUrl,
+        prefix: `${PostsCollection.basename}_${tag}`,
+      });
+      await paginator.clean();
+      return paginator.start(posts);
+    }
+    return [];
+  }
+
+  private async save() {
     try {
-      // 数据转换
-      // 判断目录存在
-      // 持久化
-      // 分页
+      // Convert data
+      const rawTags = this.tagsMap.entries();
+      const tags: PostTagItem[] = [];
+      for (const [tag, posts] of rawTags) {
+        tags.push({
+          tag,
+          posts,
+          postsPages: await this.paginate(posts, tag),
+        });
+      }
+      const tagsJson = JSON.stringify(tags, null, 0);
+
+      // Save
+      await writeByStream(this.path, tagsJson);
     } catch (error) {
       console.error("Failed analyze tags of posts.", error);
     }
@@ -64,5 +88,9 @@ export class PostsTagger {
 
   public async clean() {
     await deleteDir(this.options.outputDir!);
+  }
+
+  public get outputDir() {
+    return this.options.outputDir!;
   }
 }

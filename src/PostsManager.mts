@@ -76,10 +76,10 @@ export class PostsManager {
       },
       baseUrl
     );
-    this.generator = new PostsGenerator(
-      normalizedInputDir,
-      normalizedOutputDir
-    );
+    this.generator = new PostsGenerator({
+      inputDir: normalizedInputDir,
+      outputDir: normalizedOutputDir,
+    });
     if (tags) {
       this.tagger = new PostsTagger(
         {
@@ -115,6 +115,10 @@ export class PostsManager {
   }
 
   private async handleChanges(changes: Change[]) {
+    // Check existence of the generator output directory.
+    await ensureDirExisted(this.generator.outputDir);
+
+    // Handle all changes.
     for (const change of changes) {
       await (this[`handle${change.type}`] as (c: Change) => Promise<void>)(
         change
@@ -133,11 +137,14 @@ export class PostsManager {
     try {
       await access(this.inputDir);
     } catch (error) {
-      throw new Error("Make sure that inputDir was existed.");
+      throw new Error(
+        "Make sure that inputDir which storages your markdown files was existed."
+      );
     }
-    await ensureDirExisted(this.outputDir);
 
     // 1. Clear all json files if posts.json hasn't existed.
+    await ensureDirExisted(this.collection.outputDir);
+
     if (!(await this.collection.hasExisted())) {
       await this.clean();
       await this.collection.init();
@@ -151,13 +158,16 @@ export class PostsManager {
     // 3. Handle all changes.
     if (changes.length > 0) {
       await this.handleChanges(changes);
-      this.collection.sort();
       await this.collection.save();
     } else {
       console.log("Files have no changes.");
     }
 
-    // 4. Process tag.
-    this.tagger?.start(this.collection.posts);
+    // 4. Analyze all tags.
+    if (this.tagger) {
+      // Check existence of tags directory
+      await ensureDirExisted(this.tagger.outputDir);
+      await this.tagger.start(this.collection.posts);
+    }
   }
 }

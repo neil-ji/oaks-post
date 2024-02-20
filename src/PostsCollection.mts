@@ -34,8 +34,8 @@ export class PostsCollection {
 
   constructor(options: PostsCollectionOptions, baseUrl: string) {
     this.data = {
-      buildTime: new Date(),
       posts: [],
+      postsPages: [],
     };
     this.options = options;
     this.path = join(options.outputDir!, PostsCollection.filename);
@@ -62,27 +62,35 @@ export class PostsCollection {
     };
   }
 
-  public sort() {
-    const sortImpl = this.options.sort;
-    if (sortImpl) {
-      this.data.posts.sort(sortImpl);
-    }
-  }
-
-  public async save(): Promise<void> {
-    await writeByStream(this.path, JSON.stringify(this.data, null, 0));
-
-    // Paginate
+  private async paginate() {
     const { itemsPerPage } = this.options;
     if (itemsPerPage) {
       const paginator = new PostsPaginator({
         itemsPerPage,
-        outputDir: this.path,
+        outputDir: this.options.outputDir!,
         baseUrl: this.baseUrl,
+        prefix: PostsCollection.basename,
       });
-      await paginator.clean(PostsCollection.basename);
-      await paginator.start(this.posts);
+      await paginator.clean();
+      return paginator.start(this.posts);
     }
+    return [];
+  }
+
+  public async save(): Promise<void> {
+    const { sort: sortImpl } = this.options;
+
+    // Sort
+    if (sortImpl) {
+      this.data.posts.sort(sortImpl);
+    }
+
+    // Paginate
+    this.data.postsPages = await this.paginate();
+
+    // Save
+    const postsJson = JSON.stringify(this.data, null, 0);
+    await writeByStream(this.path, postsJson);
   }
 
   public async init(): Promise<void> {
@@ -144,6 +152,10 @@ export class PostsCollection {
 
   public get posts(): PostItem[] {
     return JSON.parse(JSON.stringify(this.data.posts));
+  }
+
+  public get outputDir(): string {
+    return this.options.outputDir!;
   }
 
   public async clean() {

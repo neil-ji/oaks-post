@@ -14,12 +14,15 @@ const posts = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
   inputDir: yourMarkdownDirectory,
   outputDir: yourJsonDirectory,
-  excerpt: {
-    rule: PostsExcerptRule.CustomTag,
-    tag: "<!--YOUR_TAG-->",
+  collections: {
+    excerpt: {
+      rule: PostsExcerptRule.CustomTag,
+      tag: "<!--YOUR_TAG-->",
+    },
+    itemsPerPage: 3,
+    sort: sortLexOrderDescend(),
   },
-  itemsPerPage: 3,
-  sort: sortLexOrderDescend(),
+  tags: {},
 });
 
 async function run() {

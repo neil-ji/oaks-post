@@ -4,19 +4,17 @@ import { dirname, join, relative } from "path";
 import { pipeline } from "stream/promises";
 import { deleteDir, deleteFileRecursively, readByStream } from "./utils.mjs";
 import grayMatter from "gray-matter";
-import { FileNode, RawPostItem } from "./types";
+import { FileNode, PostsGeneratorOptions, RawPostItem } from "./types";
 
 export class PostsGenerator {
-  private inputDir: string;
-  private outputDir: string;
+  private options: PostsGeneratorOptions;
 
-  constructor(inputDir: string, outputDir: string) {
-    this.inputDir = inputDir;
-    this.outputDir = outputDir;
+  constructor(options: PostsGeneratorOptions) {
+    this.options = options;
   }
 
   private getParentDir(path: string): string {
-    return join(this.outputDir, relative(this.inputDir, dirname(path)));
+    return join(this.outputDir, relative(this.options.inputDir, dirname(path)));
   }
 
   public async create({ hash, path, key }: FileNode): Promise<RawPostItem> {
@@ -84,6 +82,10 @@ export class PostsGenerator {
   }
 
   public async clean() {
-    await deleteDir(this.outputDir);
+    await deleteDir(this.options.outputDir);
+  }
+
+  public get outputDir() {
+    return this.options.outputDir;
   }
 }

@@ -17,20 +17,19 @@ export interface PostItem {
 }
 
 export interface Posts {
-  buildTime: Date;
   posts: PostItem[];
+  postsPages: string[];
 }
 
 export interface PostsPage {
   pages: number;
   current: number;
   posts: PostItem[];
+  url: string;
   prev?: string;
   next?: string;
 }
 
-export interface PostTagItem {
+export interface PostTagItem extends Posts {
   tag: string;
-  totals: number;
-  postsUrl: string;
 }

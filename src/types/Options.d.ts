@@ -35,6 +35,7 @@ export interface PostsPaginatorOptions {
   outputDir: string;
   itemsPerPage: number;
   baseUrl: string;
+  prefix: string;
 }
 
 /** PostsManager */
@@ -46,4 +47,10 @@ export interface PostsManagerOptions {
   tags?: PostsTaggerOptions;
   // archives?: PostsArchiveOptions;
   // categories?: PostsCategoryOptions;
+}
+
+/** PostsGenerator */
+export interface PostsGeneratorOptions {
+  inputDir: string;
+  outputDir: string;
 }

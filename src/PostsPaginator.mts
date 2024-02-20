@@ -2,7 +2,6 @@ import { createWriteStream } from "fs";
 import { readdir, rm } from "fs/promises";
 import { join } from "path";
 import { pipeline } from "stream/promises";
-import { PostsCollection } from "./PostsCollection.mjs";
 import { ensureFileExist, getRelativePath, getUrlPath } from "./utils.mjs";
 import { PostItem, PostsPage, PostsPaginatorOptions } from "./types";
 
@@ -10,27 +9,51 @@ export class PostsPaginator {
   private itemsPerPage: number;
   private outputDir: string;
   private baseUrl: string;
+  private prefix: string;
 
-  constructor({ itemsPerPage, outputDir, baseUrl }: PostsPaginatorOptions) {
+  constructor({
+    itemsPerPage,
+    outputDir,
+    baseUrl,
+    prefix,
+  }: PostsPaginatorOptions) {
     this.itemsPerPage = itemsPerPage || 10;
     this.outputDir = outputDir;
     this.baseUrl = baseUrl;
+    this.prefix = prefix;
   }
 
-  private processFile = async (data: PostsPage) => {
+  private generateUrl(pageIndex: number) {
+    const directorySegment = getRelativePath(this.outputDir);
+    return getUrlPath(
+      join(this.baseUrl, directorySegment, `${this.prefix}_${pageIndex}.json`)
+    );
+  }
+
+  private generatePrevLink(current: number) {
+    if (current > 1) return this.generateUrl(current - 1);
+  }
+
+  private generateNextLink(current: number, ceiling: number) {
+    if (current < ceiling) return this.generateUrl(current + 1);
+  }
+
+  private generateFile = async (data: PostsPage) => {
     const filePath = join(
       this.outputDir,
-      `${PostsCollection.basename}_${data.current}.json`
+      `${this.prefix}_${data.current}.json`
     );
     await ensureFileExist(filePath);
     const writeStream = createWriteStream(filePath, "utf-8");
-    return pipeline(JSON.stringify(data, null, 0), writeStream);
+    await pipeline(JSON.stringify(data, null, 0), writeStream);
+
+    return data.url;
   };
 
-  public async clean(prefix: string) {
+  public async clean() {
     try {
       const files = await readdir(this.outputDir);
-      const filesRegExp = new RegExp(`^${prefix}_\d+\.json$`);
+      const filesRegExp = new RegExp(`^${this.prefix}_\d+\.json$`);
       const postPages = files.filter((file) => {
         return file.match(filesRegExp);
       });
@@ -50,37 +73,19 @@ export class PostsPaginator {
         postGroups.push(posts.slice(i, i + this.itemsPerPage));
       }
 
-      const postPages: PostsPage[] = postGroups.map((items, index) => {
+      const postPages: PostsPage[] = postGroups.map((posts, index) => {
         const current = index + 1;
-        const directorySegment = getRelativePath(this.outputDir);
         return {
           pages: postGroups.length,
           current,
-          posts: items,
-          prev:
-            current > 1
-              ? getUrlPath(
-                  join(
-                    this.baseUrl,
-                    directorySegment,
-                    `${PostsCollection.basename}_${current - 1}.json`
-                  )
-                )
-              : undefined,
-          next:
-            current < postGroups.length
-              ? getUrlPath(
-                  join(
-                    this.baseUrl,
-                    directorySegment,
-                    `${PostsCollection.basename}_${current + 1}.json`
-                  )
-                )
-              : undefined,
+          posts,
+          url: this.generateUrl(current),
+          prev: this.generatePrevLink(current),
+          next: this.generateNextLink(current, postGroups.length),
         };
       });
 
-      await Promise.all(postPages.map(this.processFile));
+      return Promise.all(postPages.map(this.generateFile));
     } catch (error: any) {
       throw new Error(`Failed paginate.\nDetails:${error.message}`);
     }
