@@ -65,6 +65,7 @@ export class PostsManager {
     this.inputDir = normalizedInputDir;
     this.outputDir = normalizedOutputDir;
 
+    // Collection instance
     this.collection = new PostsCollection(
       {
         outputDir: `${normalizedOutputDir}_${PostsCollection.basename}`,
@@ -76,10 +77,14 @@ export class PostsManager {
       },
       baseUrl
     );
+
+    // Generator instance
     this.generator = new PostsGenerator({
       inputDir: normalizedInputDir,
       outputDir: normalizedOutputDir,
     });
+
+    // Tagger instance
     if (tags) {
       this.tagger = new PostsTagger(
         {
@@ -88,7 +93,7 @@ export class PostsManager {
           ...tags,
           excerpt: {
             ...defaultExcerptOptions,
-            ...tags?.excerpt,
+            ...tags.excerpt,
           },
         },
         baseUrl

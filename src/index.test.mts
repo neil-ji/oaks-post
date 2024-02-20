@@ -22,7 +22,9 @@ const posts = new PostsManager({
     itemsPerPage: 3,
     sort: sortLexOrderDescend(),
   },
-  tags: {},
+  tags: {
+    itemsPerPage: 5,
+  },
 });
 
 async function run() {

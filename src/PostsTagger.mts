@@ -82,7 +82,7 @@ export class PostsTagger {
   }
 
   public start = async (posts: PostItem[]) => {
-    posts.forEach(this.collect);
+    posts.forEach((post) => this.collect(post));
     await this.save();
   };
 
