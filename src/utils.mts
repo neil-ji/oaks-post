@@ -1,14 +1,7 @@
 import murmurhash from "murmurhash";
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
-import {
-  access,
-  mkdir,
-  readdir,
-  rmdir,
-  stat,
-  unlink,
-} from "node:fs/promises";
+import { access, mkdir, readdir, rmdir, stat, unlink } from "node:fs/promises";
 import {
   dirname,
   format,
@@ -47,7 +40,7 @@ export function getRelativePath(pathLike?: string | number | ParsedPath) {
 }
 
 export function getUrlPath(path: string) {
-  return path.split(sep).join("/");
+  return encodeURI(path.split(sep).join("/"));
 }
 
 /** split excerpt */
