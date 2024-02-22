@@ -78,9 +78,8 @@ export class PostsPaginator {
         };
       });
 
-      return Promise.all(
-        postPages.map((item) => this.generateFile(item, prefix))
-      );
+      const works = postPages.map((item) => this.generateFile(item, prefix));
+      return Promise.all(works);
     } catch (error: any) {
       throw new Error(`Failed paginate.\nDetails:${error.message}`);
     }
