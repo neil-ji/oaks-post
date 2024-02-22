@@ -140,6 +140,12 @@ export class PostsTagger {
       // Convert data and paginate.
       const tagsEntry = Array.from(this.tagsMap.entries());
       const works = tagsEntry.map(async ([tag, posts]) => {
+        // Sort
+        const sortImpl = this.options.sort;
+        if (sortImpl) {
+          posts.sort(sortImpl);
+        }
+        // Paginate
         const prefix = `${PostsCollection.basename}_${tag}`;
         const postsPages = await paginator?.process(posts, prefix);
         return {
