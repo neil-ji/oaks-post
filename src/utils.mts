@@ -8,7 +8,6 @@ import {
   rmdir,
   stat,
   unlink,
-  writeFile,
 } from "node:fs/promises";
 import {
   dirname,
@@ -22,22 +21,7 @@ import {
 import { pipeline } from "node:stream/promises";
 import { PostItem } from "./types/index.mjs";
 
-export async function readByStream(path: string) {
-  const readStream = createReadStream(path, "utf-8");
-  const chunks: string[] = [];
-
-  // Read file content
-  for await (const chunk of readStream) {
-    chunks.push(chunk);
-  }
-
-  return chunks.join("");
-}
-
-export async function writeByStream(path: string, content: string) {
-  const writeStream = createWriteStream(path, "utf-8");
-  await pipeline(content, writeStream);
-}
+/** path utils */
 
 export function normalizePath(pathLike?: string | number | ParsedPath) {
   let normalizedPath;
@@ -65,6 +49,8 @@ export function getRelativePath(pathLike?: string | number | ParsedPath) {
 export function getUrlPath(path: string) {
   return path.split(sep).join("/");
 }
+
+/** split excerpt */
 
 export function getExcerpt(input: string, limit: number): string {
   const lines = input.split("\n");
@@ -104,6 +90,8 @@ export function getCustomExcerpt(content: string, tag: string) {
   return content.slice(0, content.indexOf(tag));
 }
 
+/** calculate hash value */
+
 export function calculateHash(content: string, length = 8) {
   const hash = murmurhash.v3(content);
   return hash.toString(16).padStart(length, "0");
@@ -115,71 +103,7 @@ export function generateUniqueHash(input = "", length = 8) {
   return hash.digest("hex").slice(0, length);
 }
 
-export async function ensureDirExisted(dir: string) {
-  try {
-    // Check if directory exists
-    await access(dir);
-  } catch (error: any) {
-    // If directory does not exist, create it
-    if (error.code === "ENOENT") {
-      await mkdir(dir);
-    } else {
-      throw error; // Re-throw other errors
-    }
-  }
-}
-
-export async function ensureFileExist(path: string) {
-  try {
-    // Check if file exists
-    await access(path);
-  } catch (error: any) {
-    // If file does not exist, create it
-    if (error.code === "ENOENT") {
-      await writeFile(path, "");
-    } else {
-      throw error; // Re-throw other errors
-    }
-  }
-}
-
-async function deleteEmptyParentDirs(dir: string) {
-  const files = await readdir(dir);
-  if (files.length === 0) {
-    await rmdir(dir);
-    const parentDir = dirname(dir);
-    await deleteEmptyParentDirs(parentDir);
-  }
-}
-
-export async function deleteFileRecursively(path: string) {
-  await unlink(path);
-  await deleteEmptyParentDirs(dirname(path));
-}
-
-export async function deleteDir(dir: string) {
-  try {
-    const items = await readdir(dir);
-
-    for (const item of items) {
-      const itemPath = join(dir, item);
-      const stats = await stat(itemPath);
-
-      if (stats.isFile()) {
-        await unlink(itemPath);
-      } else if (stats.isDirectory()) {
-        await deleteDir(itemPath);
-
-        const itemsInDir = await readdir(itemPath);
-        if (itemsInDir.length === 0) {
-          await rmdir(itemPath);
-        }
-      }
-    }
-  } catch (error) {
-    console.error(`Error deleting directory: ${dir}`, error);
-  }
-}
+/** sort */
 
 const sortImpl =
   (ascending: boolean) =>
@@ -240,4 +164,84 @@ export function sortLexOrderDescend(
   format?: (propValue: any) => string
 ) {
   return sortImpl(false)(propName, format);
+}
+
+/** fs utils */
+
+export async function readByStream(path: string) {
+  const readStream = createReadStream(path, "utf-8");
+  const chunks: string[] = [];
+
+  // Read file content
+  for await (const chunk of readStream) {
+    chunks.push(chunk);
+  }
+
+  return chunks.join("");
+}
+
+export async function writeByStream(path: string, content: string) {
+  const writeStream = createWriteStream(path, "utf-8");
+  await pipeline(content, writeStream);
+}
+
+export async function hasExisted(path: string) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function ensureDirExisted(dir: string) {
+  try {
+    // Check if directory exists
+    await access(dir);
+  } catch (error: any) {
+    // If directory does not exist, create it
+    if (error.code === "ENOENT") {
+      await mkdir(dir);
+    } else {
+      throw error; // Re-throw other errors
+    }
+  }
+}
+
+async function deleteEmptyParentDirs(dir: string) {
+  const files = await readdir(dir);
+  if (files.length === 0) {
+    await rmdir(dir);
+    const parentDir = dirname(dir);
+    await deleteEmptyParentDirs(parentDir);
+  }
+}
+
+export async function deleteFileRecursively(path: string) {
+  await unlink(path);
+  await deleteEmptyParentDirs(dirname(path));
+}
+
+export async function deleteDir(dir: string) {
+  try {
+    const items = await readdir(dir);
+
+    for (const item of items) {
+      const itemPath = join(dir, item);
+      const stats = await stat(itemPath);
+
+      if (stats.isFile()) {
+        await unlink(itemPath);
+      } else if (stats.isDirectory()) {
+        await deleteDir(itemPath);
+
+        const itemsInDir = await readdir(itemPath);
+        if (itemsInDir.length === 0) {
+          await rmdir(itemPath);
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error deleting directory: ${dir}`, error);
+  }
 }

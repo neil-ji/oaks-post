@@ -35,7 +35,6 @@ export interface PostsPaginatorOptions {
   outputDir: string;
   itemsPerPage: number;
   baseUrl: string;
-  prefix: string;
 }
 
 /** PostsManager */

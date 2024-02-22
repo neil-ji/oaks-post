@@ -1,11 +1,12 @@
-import { access, writeFile } from "fs/promises";
 import { join } from "path";
 import {
   deleteDir,
+  ensureDirExisted,
   getCustomExcerpt,
   getExcerpt,
   getRelativePath,
   getUrlPath,
+  hasExisted,
   readByStream,
   writeByStream,
 } from "./utils.mjs";
@@ -67,14 +68,18 @@ export class PostsCollection {
     if (itemsPerPage) {
       const paginator = new PostsPaginator({
         itemsPerPage,
-        outputDir: this.options.outputDir!,
+        outputDir: this.outputDir!,
         baseUrl: this.baseUrl,
-        prefix: PostsCollection.basename,
       });
       await paginator.clean();
-      return paginator.start(this.posts);
+      await paginator.preprocess();
+      return paginator.process(this.posts, PostsCollection.basename);
     }
     return [];
+  }
+
+  public async preprocess() {
+    return ensureDirExisted(this.outputDir);
   }
 
   public async save(): Promise<void> {
@@ -99,19 +104,14 @@ export class PostsCollection {
         posts: [],
         postsPages: [],
       };
-      await writeFile(this.path, JSON.stringify(defaultData, null, 0));
+      await writeByStream(this.path, JSON.stringify(defaultData, null, 0));
     } catch (error) {
       console.error(`Failed create ${PostsCollection.filename}`, error);
     }
   }
 
   public async hasExisted(): Promise<boolean> {
-    try {
-      await access(this.path);
-    } catch {
-      return false;
-    }
-    return true;
+    return hasExisted(this.path);
   }
 
   public async load(): Promise<void> {
@@ -153,6 +153,8 @@ export class PostsCollection {
   }
 
   public async clean() {
-    await deleteDir(this.outputDir);
+    if (await hasExisted(this.outputDir)) {
+      await deleteDir(this.outputDir);
+    }
   }
 }

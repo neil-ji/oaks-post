@@ -1,26 +1,17 @@
-import { access } from "fs/promises";
 import { FileTree } from "./FileTree.mjs";
 import { PostsCollection } from "./PostsCollection.mjs";
 import { PostsGenerator } from "./PostsGenerator.mjs";
-import { PostsPaginator } from "./PostsPaginator.mjs";
 import {
-  deleteDir,
   ensureDirExisted,
   generateUniqueHash,
-  getCustomExcerpt,
-  getExcerpt,
-  getRelativePath,
-  getUrlPath,
+  hasExisted,
   normalizePath,
 } from "./utils.mjs";
 import {
   PostsManagerOptions,
   Change,
-  PostItem,
   PostsExcerptRule,
-  RawPostItem,
 } from "./types/index.mjs";
-import { join } from "path";
 import { PostsTagger } from "./PostsTagger.mjs";
 
 export class PostsManager {
@@ -135,32 +126,30 @@ export class PostsManager {
   }
 
   public async clean() {
-    return Promise.all([
+    const works = [
       this.generator.clean(),
       this.collection.clean(),
       this.tagger?.clean(),
-    ]);
+    ];
+    await Promise.all(works);
   }
 
   public async start() {
     // 0. Validate directory.
-    try {
-      await access(this.inputDir);
-    } catch (error) {
+    const hasInputDirExisted = await hasExisted(this.inputDir);
+    if (!hasInputDirExisted) {
       throw new Error(
         "Make sure that inputDir which storages your markdown files was existed."
       );
     }
-    await ensureDirExisted(this.collection.outputDir);
-    if (this.tagger) {
-      await ensureDirExisted(this.tagger.outputDir);
-    }
+    await this.collection.preprocess();
+    await this.tagger?.preprocess();
 
     // 1. Clear all json files if posts.json hasn't existed.
-    const collectionExist = await this.collection.hasExisted();
-    const tagsExist = this.tagger && (await this.tagger.hasExisted());
+    const hasCollectionExist = await this.collection.hasExisted();
+    const hasTagsExist = this.tagger && (await this.tagger.hasExisted());
 
-    if (!collectionExist || !tagsExist) {
+    if (!hasCollectionExist || !hasTagsExist) {
       await this.clean();
       await this.collection.init();
       await this.tagger?.init();

@@ -59,11 +59,10 @@ export class FileTree {
         const filteredChildren = children.filter((child) =>
           this.isSupportedExtname(child)
         );
-        const nodes = await Promise.all(
-          filteredChildren.map((child) =>
-            this.buildTree(join(path, child), root)
-          )
+        const works = filteredChildren.map((child) =>
+          this.buildTree(join(path, child), root)
         );
+        const nodes = await Promise.all(works);
         root.children = nodes;
       } else {
         root.hash = await this.extractHash(path);

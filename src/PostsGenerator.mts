@@ -1,8 +1,12 @@
-import { createWriteStream } from "fs";
 import { mkdir, rename } from "fs/promises";
 import { dirname, join, relative } from "path";
-import { pipeline } from "stream/promises";
-import { deleteDir, deleteFileRecursively, readByStream } from "./utils.mjs";
+import {
+  deleteDir,
+  deleteFileRecursively,
+  hasExisted,
+  readByStream,
+  writeByStream,
+} from "./utils.mjs";
 import grayMatter from "gray-matter";
 import {
   FileNode,
@@ -35,8 +39,7 @@ export class PostsGenerator {
       const jsonFilename = `post_${hash}_${key}.json`;
       const jsonPath = join(parentDir, jsonFilename);
 
-      const writeStream = createWriteStream(jsonPath, "utf-8");
-      await pipeline(jsonContent, writeStream);
+      await writeByStream(jsonPath, jsonContent);
 
       console.log(`Generate json file: ${jsonPath}`);
       return { path: jsonPath, hash: hash!, frontMatter, content };
@@ -73,9 +76,7 @@ export class PostsGenerator {
       const newJsonPath = join(parentDir, jsonFilename);
 
       await rename(oldJsonPath, newJsonPath);
-
-      const writeStream = createWriteStream(newJsonPath, "utf-8");
-      await pipeline(jsonContent, writeStream);
+      await writeByStream(newJsonPath, jsonContent);
 
       console.log(`Update json file name: ${oldJsonPath} => ${newJsonPath}`);
       return { path: newJsonPath, hash: hash!, frontMatter, content };
@@ -86,7 +87,9 @@ export class PostsGenerator {
   }
 
   public async clean() {
-    await deleteDir(this.outputDir);
+    if (await hasExisted(this.outputDir)) {
+      await deleteDir(this.outputDir);
+    }
   }
 
   public get outputDir() {

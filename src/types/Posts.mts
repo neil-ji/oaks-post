@@ -18,7 +18,7 @@ export interface PostItem {
 
 export interface Posts {
   posts: PostItem[];
-  postsPages: string[];
+  postsPages?: string[];
 }
 
 export interface PostsPage {

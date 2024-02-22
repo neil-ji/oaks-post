@@ -1,71 +1,64 @@
-import { createWriteStream } from "fs";
-import { readdir, rm } from "fs/promises";
 import { join } from "path";
-import { pipeline } from "stream/promises";
-import { ensureFileExist, getRelativePath, getUrlPath } from "./utils.mjs";
+import {
+  deleteDir,
+  ensureDirExisted,
+  getRelativePath,
+  getUrlPath,
+  hasExisted,
+  writeByStream,
+} from "./utils.mjs";
 import { PostItem, PostsPage, PostsPaginatorOptions } from "./types/index.mjs";
 
 export class PostsPaginator {
+  public static get basename() {
+    return "pages";
+  }
+
   private itemsPerPage: number;
   private outputDir: string;
   private baseUrl: string;
-  private prefix: string;
 
-  constructor({
-    itemsPerPage,
-    outputDir,
-    baseUrl,
-    prefix,
-  }: PostsPaginatorOptions) {
+  constructor({ itemsPerPage, outputDir, baseUrl }: PostsPaginatorOptions) {
     this.itemsPerPage = itemsPerPage || 10;
-    this.outputDir = outputDir;
+    this.outputDir = join(outputDir, PostsPaginator.basename);
     this.baseUrl = baseUrl;
-    this.prefix = prefix;
   }
 
-  private generateUrl(pageIndex: number) {
+  private generateUrl(pageIndex: number, prefix: string) {
     const directorySegment = getRelativePath(this.outputDir);
     return getUrlPath(
-      join(this.baseUrl, directorySegment, `${this.prefix}_${pageIndex}.json`)
+      join(this.baseUrl, directorySegment, `${prefix}_${pageIndex}.json`)
     );
   }
 
-  private generatePrevLink(current: number) {
-    if (current > 1) return this.generateUrl(current - 1);
+  private generatePrevLink(current: number, prefix: string) {
+    if (current > 1) return this.generateUrl(current - 1, prefix);
   }
 
-  private generateNextLink(current: number, ceiling: number) {
-    if (current < ceiling) return this.generateUrl(current + 1);
+  private generateNextLink(current: number, ceiling: number, prefix: string) {
+    if (current < ceiling) return this.generateUrl(current + 1, prefix);
   }
 
-  private generateFile = async (data: PostsPage) => {
-    const filePath = join(
-      this.outputDir,
-      `${this.prefix}_${data.current}.json`
-    );
-    await ensureFileExist(filePath);
-    const writeStream = createWriteStream(filePath, "utf-8");
-    await pipeline(JSON.stringify(data, null, 0), writeStream);
+  private generateFile = async (data: PostsPage, prefix: string) => {
+    const filePath = join(this.outputDir, `${prefix}_${data.current}.json`);
+
+    await writeByStream(filePath, JSON.stringify(data, null, 0));
 
     return data.url;
   };
 
   public async clean() {
-    try {
-      const files = await readdir(this.outputDir);
-      const filesRegExp = new RegExp(`^${this.prefix}_\d+\.json$`);
-      const postPages = files.filter((file) => {
-        return file.match(filesRegExp);
-      });
-      await Promise.all(
-        postPages.map((file) => rm(join(this.outputDir, file)))
-      );
-    } catch (error) {
-      throw new Error("Failed clear remained posts pagination file.");
+    if (await hasExisted(this.outputDir)) {
+      await deleteDir(this.outputDir);
     }
   }
 
-  public start = async (posts: PostItem[]) => {
+  public async preprocess() {
+    // Check if outputDir is existed.
+    await ensureDirExisted(this.outputDir);
+  }
+
+  public process = async (posts: PostItem[], prefix: string) => {
     try {
       const postGroups = [];
 
@@ -79,13 +72,15 @@ export class PostsPaginator {
           pages: postGroups.length,
           current,
           posts,
-          url: this.generateUrl(current),
-          prev: this.generatePrevLink(current),
-          next: this.generateNextLink(current, postGroups.length),
+          url: this.generateUrl(current, prefix),
+          prev: this.generatePrevLink(current, prefix),
+          next: this.generateNextLink(current, postGroups.length, prefix),
         };
       });
 
-      return Promise.all(postPages.map(this.generateFile));
+      return Promise.all(
+        postPages.map((item) => this.generateFile(item, prefix))
+      );
     } catch (error: any) {
       throw new Error(`Failed paginate.\nDetails:${error.message}`);
     }
