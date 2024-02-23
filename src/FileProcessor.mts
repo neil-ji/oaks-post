@@ -4,15 +4,7 @@ import { basename, extname } from "path";
 import { calculateHash, readByStream } from "./utils.mjs";
 import { Change, ChangeType, FileNode } from "./types/index.mjs";
 
-export class FileTree {
-  private markdownDirectory: string;
-  private jsonDirectory: string;
-
-  constructor(markdownDirectory: string, jsonDirectory: string) {
-    this.markdownDirectory = markdownDirectory;
-    this.jsonDirectory = jsonDirectory;
-  }
-
+export class FileProcessor {
   private async extractHash(path: string): Promise<string> {
     const fileExtname = extname(path);
     if (fileExtname === ".md") {
@@ -51,7 +43,7 @@ export class FileTree {
       const root: FileNode = {
         key: this.extractPrimaryKey(path),
         path,
-        parent: parent,
+        parent,
       };
 
       if (stats.isDirectory()) {
@@ -144,9 +136,11 @@ export class FileTree {
     return changes;
   }
 
-  public async compare() {
-    const markdownTree = await this.buildTree(this.markdownDirectory);
-    const jsonTree = await this.buildTree(this.jsonDirectory);
-    return this.equalTree(markdownTree, jsonTree);
+  public async build(rootDir: string) {
+    return this.buildTree(rootDir);
+  }
+
+  public async compare(base: FileNode, compared: FileNode) {
+    return this.equalTree(base, compared);
   }
 }

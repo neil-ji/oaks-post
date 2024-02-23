@@ -1,4 +1,4 @@
-import { FileTree } from "./FileTree.mjs";
+import { FileProcessor } from "./FileProcessor.mjs";
 import { PostsCollection } from "./PostsCollection.mjs";
 import { PostsGenerator } from "./PostsGenerator.mjs";
 import {
@@ -158,8 +158,10 @@ export class PostsManager {
     await this.tagger?.load();
 
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
-    const fileTree = new FileTree(this.inputDir, this.outputDir);
-    const changes = await fileTree.compare();
+    const fileProcessor = new FileProcessor();
+    const markdownTree = await fileProcessor.build(this.inputDir);
+    const jsonTree = await fileProcessor.build(this.outputDir);
+    const changes = await fileProcessor.compare(markdownTree, jsonTree);
 
     // 3. Handle all changes.
     if (changes.length > 0) {
