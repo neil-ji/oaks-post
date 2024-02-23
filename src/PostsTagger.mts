@@ -5,6 +5,7 @@ import {
   PostTagItem,
   RawPostItem,
   PostsExcerptRule,
+  PostFrontMatter,
 } from "./types/index.mjs";
 import {
   deleteDir,
@@ -77,15 +78,8 @@ export class PostsTagger {
     });
   }
 
-  public delete(hash?: string) {
-    const tags: string[] = [];
-    for (const posts of this.tagsMap.values()) {
-      const target = posts.find((item) => item.hash === hash);
-      const targetTags = target?.frontMatter?.[this.options.propName!];
-      if (targetTags) {
-        tags.push(...targetTags);
-      }
-    }
+  public delete(hash: string, frontMatter: PostFrontMatter) {
+    const tags: string[] = frontMatter[this.options.propName!] || [];
 
     const deletedTags: string[] = [];
     tags.forEach((tag) => {
@@ -108,8 +102,8 @@ export class PostsTagger {
     });
   }
 
-  public modify(rawItem: RawPostItem, hash?: string) {
-    this.delete(hash);
+  public modify(rawItem: RawPostItem, hash: string) {
+    this.delete(hash, rawItem.frontMatter);
     this.collect(rawItem);
   }
 

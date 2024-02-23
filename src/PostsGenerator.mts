@@ -49,12 +49,14 @@ export class PostsGenerator {
     }
   }
 
-  public async delete(node: FileNode): Promise<string> {
+  public async delete(node: FileNode): Promise<RawPostItem> {
     try {
+      const deletedFileContent = await readByStream(node.path);
+      const { frontMatter, content } = JSON.parse(deletedFileContent);
       await deleteFileRecursively(node.path);
 
       console.log(`Delete json file: ${node.path}`);
-      return node.hash!;
+      return { path: node.path, hash: node.hash!, frontMatter, content };
     } catch (error) {
       console.error(`Failed delete file: ${node.path}`, error);
       process.exit(1);

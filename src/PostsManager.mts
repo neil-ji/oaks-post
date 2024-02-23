@@ -94,9 +94,9 @@ export class PostsManager {
 
   private async handleDelete({ json }: Change) {
     if (!json) return;
-    const hash = await this.generator.delete(json);
+    const { hash, frontMatter } = await this.generator.delete(json);
     this.collection.delete(hash);
-    this.tagger?.delete(hash);
+    this.tagger?.delete(hash, frontMatter);
   }
 
   private async handleCreate({ markdown }: Change) {
@@ -110,7 +110,7 @@ export class PostsManager {
     const { json, markdown } = change;
     const rawPost = await this.generator.modify(markdown, json.path);
     this.collection.modify(rawPost, json.hash);
-    this.tagger?.modify(rawPost, json.hash);
+    this.tagger?.modify(rawPost, json.hash!);
   }
 
   private async handleChanges(changes: Change[]) {
