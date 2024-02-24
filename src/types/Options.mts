@@ -45,7 +45,7 @@ export interface PostsManagerOptions {
   collections?: PostsCollectionOptions;
   tags?: PostsTaggerOptions;
   // archives?: PostsArchiveOptions;
-  // categories?: PostsCategoryOptions;
+  categories?: PostsClassifierOptions;
 }
 
 /** PostsGenerator */
@@ -53,3 +53,26 @@ export interface PostsGeneratorOptions {
   inputDir: string;
   outputDir: string;
 }
+
+/** PostsClassifier */
+export enum PostsCategoriesAnalyzeRule {
+  /**
+   * Analyze posts directories as categories.
+   */
+  Directory = 1,
+  FrontMatter,
+  Disable,
+}
+
+export interface PostsClassifierOptions extends PostsListBase {
+  rule?: PostsCategoriesAnalyzeRule;
+  propName?: string;
+}
+
+export type PostsCategoriesMap = Map<
+  string,
+  {
+    posts: PostItem[];
+    subcategories: PostsCategoriesMap;
+  }
+>;

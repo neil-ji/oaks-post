@@ -33,3 +33,8 @@ export interface PostsPage {
 export interface PostTagItem extends Posts {
   tag: string;
 }
+
+export interface PostCategoryItem extends Posts {
+  category: string;
+  subcategories: PostCategoryItem[];
+}

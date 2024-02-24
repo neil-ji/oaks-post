@@ -25,6 +25,9 @@ const posts = new PostsManager({
   tags: {
     itemsPerPage: 5,
   },
+  categories: {
+    itemsPerPage: 2,
+  },
 });
 
 async function run() {
