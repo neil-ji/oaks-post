@@ -23,15 +23,25 @@ const posts = new PostsManager({
     sort: sortLexOrderDescend(),
   },
   tags: {
+    sort: sortDateAscend(),
     itemsPerPage: 5,
+    excerpt: {
+      rule: PostsExcerptRule.ByLines,
+      lines: 2,
+    },
   },
   categories: {
+    sort: sortDateDescend(),
     itemsPerPage: 2,
+    excerpt: {
+      rule: PostsExcerptRule.ByLines,
+      lines: 1,
+    },
   },
 });
 
 async function run() {
-  // await posts.clean();
+  await posts.clean();
   await posts.start();
 }
 

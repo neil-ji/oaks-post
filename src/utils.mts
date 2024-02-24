@@ -12,7 +12,7 @@ import {
   sep,
 } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { PostItem } from "./types/index.mjs";
+import { PostsItem } from "./types/index.mjs";
 
 /** path utils */
 
@@ -101,7 +101,7 @@ export function generateUniqueHash(input = "", length = 8) {
 const sortImpl =
   (ascending: boolean) =>
   (propName: string, format?: (propValue: any) => any) =>
-  (cur: PostItem, next: PostItem) => {
+  (cur: PostsItem, next: PostsItem) => {
     const curValue = cur.frontMatter?.[propName];
     const nextValue = next.frontMatter?.[propName];
 

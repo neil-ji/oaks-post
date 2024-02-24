@@ -7,7 +7,7 @@ import {
   hasExisted,
   writeByStream,
 } from "./utils.mjs";
-import { PostItem, PostsPage, PostsPaginatorOptions } from "./types/index.mjs";
+import { PostsItem, PostsPage, PostsPaginatorOptions } from "./types/index.mjs";
 
 export class PostsPaginator {
   public static get basename() {
@@ -58,7 +58,7 @@ export class PostsPaginator {
     await ensureDirExisted(this.outputDir);
   }
 
-  public process = async (posts: PostItem[], prefix: string) => {
+  public process = async (posts: PostsItem[], prefix: string) => {
     try {
       const postGroups = [];
 

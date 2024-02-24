@@ -1,11 +1,13 @@
 export * from "./PostsManager.mjs";
 export {
   PostFrontMatter,
-  PostItem,
+  PostsItem,
   Posts,
   PostsExcerptOptions,
   PostsExcerptRule,
   PostsPage,
+  PostsCategoriesAnalyzeRule,
+  PostsManagerOptions,
 } from "./types/index.mjs";
 export {
   sortDateAscend,

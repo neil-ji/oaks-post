@@ -13,9 +13,9 @@ import {
 import {
   Posts,
   PostsCollectionOptions,
-  PostItem,
+  PostsItem,
   PostsExcerptRule,
-  RawPostItem,
+  RawPostsItem,
 } from "./types/index.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 
@@ -32,6 +32,7 @@ export class PostsCollection {
   private path: string;
   private options: PostsCollectionOptions;
   private baseUrl: string;
+  private paginator?: PostsPaginator;
 
   constructor(options: PostsCollectionOptions, baseUrl: string) {
     this.data = {
@@ -41,6 +42,15 @@ export class PostsCollection {
     this.options = options;
     this.path = join(options.outputDir!, PostsCollection.filename);
     this.baseUrl = baseUrl;
+
+    const { itemsPerPage } = this.options;
+    if (itemsPerPage) {
+      this.paginator = new PostsPaginator({
+        itemsPerPage,
+        outputDir: this.outputDir,
+        baseUrl: this.baseUrl,
+      });
+    }
   }
 
   private processRawPostItem({
@@ -48,7 +58,7 @@ export class PostsCollection {
     hash,
     frontMatter,
     content,
-  }: RawPostItem): PostItem {
+  }: RawPostsItem): PostsItem {
     const { excerpt } = this.options;
     const tag = excerpt?.tag || "<!--more-->";
     const lines = excerpt?.lines || 5;
@@ -64,18 +74,9 @@ export class PostsCollection {
   }
 
   private async paginate() {
-    const { itemsPerPage } = this.options;
-    if (itemsPerPage) {
-      const paginator = new PostsPaginator({
-        itemsPerPage,
-        outputDir: this.outputDir!,
-        baseUrl: this.baseUrl,
-      });
-      await paginator.clean();
-      await paginator.preprocess();
-      return paginator.process(this.posts, PostsCollection.basename);
-    }
-    return [];
+    await this.paginator?.clean();
+    await this.paginator?.preprocess();
+    return this.paginator?.process(this.posts, PostsCollection.basename) || [];
   }
 
   public async preprocess() {
@@ -122,19 +123,19 @@ export class PostsCollection {
     }
   }
 
-  public collect(newItem: RawPostItem) {
+  public collect(newItem: RawPostsItem) {
     this.data.posts.push(this.processRawPostItem(newItem));
   }
 
-  public delete(hash?: string) {
+  public delete(hash: string) {
     this.data.posts.splice(
       this.data.posts.findIndex((item) => item.hash === hash),
       1
     );
   }
 
-  public modify(newItem: RawPostItem, hash?: string) {
-    const target = this.data.posts.findIndex((item) => item.hash === hash);
+  public modify(newItem: RawPostsItem, oldHash: string) {
+    const target = this.data.posts.findIndex((item) => item.hash === oldHash);
     if (target === -1) {
       throw new Error(
         "Failed modify post item.\nDetails: Cannot find specific item in posts.json"
@@ -144,7 +145,7 @@ export class PostsCollection {
     }
   }
 
-  public get posts(): PostItem[] {
+  public get posts(): PostsItem[] {
     return JSON.parse(JSON.stringify(this.data.posts));
   }
 

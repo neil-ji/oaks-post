@@ -2,39 +2,78 @@ export interface PostFrontMatter {
   [key: string]: any;
 }
 
-export interface RawPostItem {
+export interface RawPostsItem extends Post {
   path: string;
   hash: string;
-  frontMatter: PostFrontMatter;
-  content: string;
 }
 
-export interface PostItem {
-  hash?: string;
-  url?: string;
+export interface ExcerptedPost {
+  /** Markdown front matter */
   frontMatter?: PostFrontMatter;
+
+  /** Excerpt from Markdown content */
   excerpt?: string;
 }
 
-export interface Posts {
-  posts: PostItem[];
-  postsPages?: string[];
+/** Post element in the Posts List */
+export interface PostsItem extends ExcerptedPost {
+  /** Unique identifier of a post */
+  hash?: string;
+
+  /** URL of a post */
+  url?: string;
 }
 
+/** Single post file */
+export interface Post {
+  /** Markdown front matter */
+  frontMatter: PostFrontMatter;
+
+  /** Markdown content */
+  content: string;
+}
+
+/** Posts pages file */
 export interface PostsPage {
+  /** Aggregate of posts pages */
   pages: number;
+
+  /** Current page index */
   current: number;
-  posts: PostItem[];
+
+  /** Posts set of each page */
+  posts: PostsItem[];
+
+  /** URL of current page */
   url: string;
+
+  /** URL of previous page */
   prev?: string;
+
+  /** URL of next page */
   next?: string;
 }
 
-export interface PostTagItem extends Posts {
+/** Posts collection file */
+export interface Posts {
+  /** Partial or all posts */
+  posts: PostsItem[];
+
+  /** URLs of posts pages */
+  postsPages?: string[];
+}
+
+/** Posts tags collection file */
+export interface PostTagsItem extends Posts {
+  /** Tag name */
   tag: string;
 }
 
-export interface PostCategoryItem extends Posts {
+/** Posts categories collection file */
+export interface PostCategoriesItem extends Posts {
+  /** Category name */
   category: string;
-  subcategories: PostCategoryItem[];
+
+  /** Subcategories */
+  subcategories: PostCategoriesItem[];
 }

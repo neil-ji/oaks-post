@@ -129,10 +129,10 @@ export class PostsManager {
 
   private async handleModify(change: Required<Change>) {
     const { json, markdown } = change;
-    const rawPost = await this.generator.modify(markdown, json.path);
-    this.collection.modify(rawPost, json.hash);
-    this.tagger?.modify(rawPost, json.hash!);
-    this.classifier?.modify(rawPost, json.hash!);
+    const { oldItem, newItem } = await this.generator.modify(markdown, json);
+    this.collection.modify(newItem, oldItem.hash);
+    this.tagger?.modify(newItem, oldItem);
+    this.classifier?.modify(newItem, oldItem);
   }
 
   private async handleChanges(changes: Change[]) {

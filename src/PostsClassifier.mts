@@ -1,12 +1,12 @@
 import { join } from "path";
 import {
-  PostItem,
-  RawPostItem,
+  PostsItem,
+  RawPostsItem,
   PostsExcerptRule,
   PostsClassifierOptions,
   PostsCategoriesMap,
   PostFrontMatter,
-  PostCategoryItem,
+  PostCategoriesItem,
 } from "./types/index.mjs";
 import {
   deleteDir,
@@ -43,21 +43,56 @@ export class PostsClassifier {
     this.baseUrl = baseUrl;
     this.categoriesMap = new Map();
 
-    if (options.itemsPerPage) {
+    const { itemsPerPage } = this.options;
+    if (itemsPerPage) {
       this.paginator = new PostsPaginator({
-        itemsPerPage: options.itemsPerPage,
+        itemsPerPage,
         outputDir: this.outputDir,
         baseUrl: this.baseUrl,
       });
     }
   }
 
-  private processRawPostItem({
+  // private processRawPostsItem({
+  //   path,
+  //   hash,
+  //   frontMatter,
+  //   content,
+  // }: RawPostsItem): PostsItem {
+  //   const { excerpt } = this.options;
+  //   const tag = excerpt?.tag || "<!--more-->";
+  //   const lines = excerpt?.lines || 5;
+
+  //   let result: string = "";
+
+  //   switch (excerpt?.rule) {
+  //     case PostsExcerptRule.FullContent:
+  //       break;
+  //     case PostsExcerptRule.NoContent:
+  //       break;
+  //     case PostsExcerptRule.CustomTag:
+  //       result = getCustomExcerpt(content, tag);
+  //       break;
+  //     case PostsExcerptRule.ByLines:
+  //     default:
+  //       result = getExcerpt(content, lines);
+  //       break;
+  //   }
+
+  //   return {
+  //     url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
+  //     hash,
+  //     frontMatter,
+  //     excerpt: result,
+  //   };
+  // }
+
+  private processRawPostsItem({
     path,
     hash,
     frontMatter,
     content,
-  }: RawPostItem): PostItem {
+  }: RawPostsItem): PostsItem {
     const { excerpt } = this.options;
     const tag = excerpt?.tag || "<!--more-->";
     const lines = excerpt?.lines || 5;
@@ -73,7 +108,7 @@ export class PostsClassifier {
   }
 
   private convertArrayToMap(
-    categories: PostCategoryItem[]
+    categories: PostCategoriesItem[]
   ): PostsCategoriesMap {
     const map = new Map();
     categories.forEach(({ category, posts, subcategories }) => {
@@ -85,8 +120,8 @@ export class PostsClassifier {
     return map;
   }
 
-  private convertMapToArray(map: PostsCategoriesMap): PostCategoryItem[] {
-    const categories: PostCategoryItem[] = [];
+  private convertMapToArray(map: PostsCategoriesMap): PostCategoriesItem[] {
+    const categories: PostCategoriesItem[] = [];
     map.forEach(({ posts, subcategories }, category) => {
       categories.push({
         category,
@@ -98,37 +133,48 @@ export class PostsClassifier {
   }
 
   private processFiles(
-    categories: PostCategoryItem[]
-  ): Promise<PostCategoryItem[]> {
+    categories: PostCategoriesItem[],
+    prefix: string
+  ): Promise<PostCategoriesItem[]> {
     const works = categories.map(async ({ category, posts, subcategories }) => {
-      const postsPages = await this.paginator?.process(
-        posts,
-        `${PostsCollection.basename}_${category}`
-      );
+      // Paginate
+      const newPrefix = `${prefix}_${category}`;
+      const postsPages = await this.paginator?.process(posts, newPrefix);
+
+      // Sort
+      const sortImpl = this.options.sort;
+      if (sortImpl) {
+        posts.sort(sortImpl);
+      }
+
       return {
         category,
         posts,
         postsPages,
-        subcategories: await this.processFiles(subcategories),
+        subcategories: await this.processFiles(subcategories, newPrefix),
       };
     });
     return Promise.all(works);
   }
 
-  public collect(rawItem: RawPostItem) {
-    const item = this.processRawPostItem(rawItem);
+  public collect(rawItem: RawPostsItem) {
+    const item = this.processRawPostsItem(rawItem);
     const categories: string[] = item.frontMatter?.[this.options.propName!];
     if (!categories) return;
 
     let p = this.categoriesMap;
     categories.forEach((value, index) => {
       if (!p.has(value)) {
-        const posts = index === categories.length - 1 ? [item] : [];
         p.set(value, {
-          posts,
+          posts: [],
           subcategories: new Map(),
         });
       }
+
+      if (index === categories.length - 1) {
+        p.get(value)?.posts.push(item);
+      }
+
       p = p.get(value)!.subcategories;
     });
   }
@@ -154,9 +200,9 @@ export class PostsClassifier {
     });
   }
 
-  public modify(rawItem: RawPostItem, hash: string) {
-    this.delete(hash, rawItem.frontMatter);
-    this.collect(rawItem);
+  public modify(newItem: RawPostsItem, oldItem: RawPostsItem) {
+    this.delete(oldItem.hash, oldItem.frontMatter);
+    this.collect(newItem);
   }
 
   public async preprocess() {
@@ -171,7 +217,12 @@ export class PostsClassifier {
 
       // Convert data and paginate.
       const categories = this.convertMapToArray(this.categoriesMap);
-      const data = await this.processFiles(categories);
+      const data = await this.processFiles(
+        categories,
+        PostsCollection.basename
+      );
+
+      // Save
       const json = JSON.stringify(data, null, 0);
       await writeByStream(this.path, json);
     } catch (error) {
@@ -191,7 +242,7 @@ export class PostsClassifier {
 
   public async init(): Promise<void> {
     try {
-      const defaultData: PostCategoryItem[] = [];
+      const defaultData: PostCategoriesItem[] = [];
       await writeByStream(this.path, JSON.stringify(defaultData, null, 0));
     } catch (error) {
       console.error(`Failed create ${PostsClassifier.filename}`, error);
@@ -204,7 +255,7 @@ export class PostsClassifier {
 
   public async load(): Promise<void> {
     try {
-      const categories: PostCategoryItem[] = JSON.parse(
+      const categories: PostCategoriesItem[] = JSON.parse(
         await readByStream(this.path)
       );
       this.categoriesMap = this.convertArrayToMap(categories);

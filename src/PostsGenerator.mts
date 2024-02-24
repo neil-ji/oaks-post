@@ -10,8 +10,9 @@ import {
 import grayMatter from "gray-matter";
 import {
   FileNode,
+  Post,
   PostsGeneratorOptions,
-  RawPostItem,
+  RawPostsItem,
 } from "./types/index.mjs";
 
 export class PostsGenerator {
@@ -25,23 +26,25 @@ export class PostsGenerator {
     return join(this.outputDir, relative(this.options.inputDir, dirname(path)));
   }
 
-  public async create({ hash, path, key }: FileNode): Promise<RawPostItem> {
+  public async create({ hash, path, key }: FileNode): Promise<RawPostsItem> {
     try {
+      // Make directories
       const parentDir = this.getParentDir(path);
       await mkdir(parentDir, {
         recursive: true,
       });
 
+      // Read and analyze markdown file
       const markdownContent = await readByStream(path);
       const { data: frontMatter, content } = grayMatter(markdownContent);
 
+      // Create JSON file
       const jsonContent = JSON.stringify({ frontMatter, content }, null, 0);
       const jsonFilename = `post_${hash}_${key}.json`;
       const jsonPath = join(parentDir, jsonFilename);
-
       await writeByStream(jsonPath, jsonContent);
+      console.log(`Generate post: ${jsonPath}`);
 
-      console.log(`Generate json file: ${jsonPath}`);
       return { path: jsonPath, hash: hash!, frontMatter, content };
     } catch (error) {
       console.error("Error: failed create post_[hash]_[key].json", error);
@@ -49,13 +52,16 @@ export class PostsGenerator {
     }
   }
 
-  public async delete(node: FileNode): Promise<RawPostItem> {
+  public async delete(node: FileNode): Promise<RawPostsItem> {
     try {
+      // Record file content before delete it
       const deletedFileContent = await readByStream(node.path);
       const { frontMatter, content } = JSON.parse(deletedFileContent);
-      await deleteFileRecursively(node.path);
 
-      console.log(`Delete json file: ${node.path}`);
+      // Delete file
+      await deleteFileRecursively(node.path);
+      console.log(`Delete post: ${node.path}`);
+
       return { path: node.path, hash: node.hash!, frontMatter, content };
     } catch (error) {
       console.error(`Failed delete file: ${node.path}`, error);
@@ -65,23 +71,32 @@ export class PostsGenerator {
 
   public async modify(
     { hash, path, key }: FileNode,
-    oldJsonPath: string
-  ): Promise<RawPostItem> {
+    json: FileNode
+  ): Promise<{ newItem: RawPostsItem; oldItem: RawPostsItem }> {
     try {
+      // Make directories
       const parentDir = this.getParentDir(path);
 
+      // Read and analyze markdown file
       const markdownContent = await readByStream(path);
       const { data: frontMatter, content } = grayMatter(markdownContent);
 
-      const jsonContent = JSON.stringify({ frontMatter, content }, null, 0);
-      const jsonFilename = `post_${hash}_${key}.json`;
-      const newJsonPath = join(parentDir, jsonFilename);
+      // Record old json file before modify it
+      const oldFileContent = await readByStream(json.path);
+      const oldFile: Post = JSON.parse(oldFileContent);
 
-      await rename(oldJsonPath, newJsonPath);
-      await writeByStream(newJsonPath, jsonContent);
+      // Rename and update json file
+      const newFileContent = JSON.stringify({ frontMatter, content }, null, 0);
+      const newFilename = `post_${hash}_${key}.json`;
+      const newFilePath = join(parentDir, newFilename);
+      await rename(json.path, newFilePath);
+      await writeByStream(newFilePath, newFileContent);
+      console.log(`Update post: ${json.path} => ${newFilePath}`);
 
-      console.log(`Update json file name: ${oldJsonPath} => ${newJsonPath}`);
-      return { path: newJsonPath, hash: hash!, frontMatter, content };
+      return {
+        newItem: { path: newFilePath, hash: hash!, frontMatter, content },
+        oldItem: { ...oldFile, path: json.path, hash: json.hash! },
+      };
     } catch (error) {
       console.error("Error: failed update post_[hash]_[key].json", error);
       process.exit(1);

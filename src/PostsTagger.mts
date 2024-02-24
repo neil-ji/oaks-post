@@ -1,9 +1,9 @@
 import { join } from "path";
 import {
-  PostItem,
+  PostsItem,
   PostsTaggerOptions,
-  PostTagItem,
-  RawPostItem,
+  PostTagsItem,
+  RawPostsItem,
   PostsExcerptRule,
   PostFrontMatter,
 } from "./types/index.mjs";
@@ -32,14 +32,24 @@ export class PostsTagger {
 
   private options: PostsTaggerOptions;
   private baseUrl: string;
-  private tagsMap: Map<string, PostItem[]>;
+  private tagsMap: Map<string, PostsItem[]>;
   private path: string;
+  private paginator?: PostsPaginator;
 
   constructor(options: PostsTaggerOptions, baseUrl: string) {
     this.options = options;
     this.path = join(options.outputDir!, PostsTagger.filename);
     this.baseUrl = baseUrl;
     this.tagsMap = new Map();
+
+    const { itemsPerPage } = this.options;
+    if (itemsPerPage) {
+      this.paginator = new PostsPaginator({
+        itemsPerPage,
+        outputDir: this.outputDir,
+        baseUrl: this.baseUrl,
+      });
+    }
   }
 
   private processRawPostItem({
@@ -47,7 +57,7 @@ export class PostsTagger {
     hash,
     frontMatter,
     content,
-  }: RawPostItem): PostItem {
+  }: RawPostsItem): PostsItem {
     const { excerpt } = this.options;
     const tag = excerpt?.tag || "<!--more-->";
     const lines = excerpt?.lines || 5;
@@ -62,7 +72,7 @@ export class PostsTagger {
     };
   }
 
-  public collect(rawItem: RawPostItem) {
+  public collect(rawItem: RawPostsItem) {
     const newItem = this.processRawPostItem(rawItem);
     const tags: string[] | undefined =
       newItem.frontMatter?.[this.options.propName!];
@@ -102,22 +112,9 @@ export class PostsTagger {
     });
   }
 
-  public modify(rawItem: RawPostItem, hash: string) {
-    this.delete(hash, rawItem.frontMatter);
-    this.collect(rawItem);
-  }
-
-  private getPaginator() {
-    let paginator;
-    const { itemsPerPage } = this.options;
-    if (itemsPerPage) {
-      paginator = new PostsPaginator({
-        itemsPerPage,
-        outputDir: this.outputDir,
-        baseUrl: this.baseUrl,
-      });
-    }
-    return paginator;
+  public modify(newItem: RawPostsItem, oldItem: RawPostsItem) {
+    this.delete(oldItem.hash, oldItem.frontMatter);
+    this.collect(newItem);
   }
 
   public async preprocess() {
@@ -127,9 +124,8 @@ export class PostsTagger {
   public async save() {
     try {
       // Prepare to paginate
-      const paginator = this.getPaginator();
-      await paginator?.clean();
-      await paginator?.preprocess();
+      await this.paginator?.clean();
+      await this.paginator?.preprocess();
 
       // Convert data and paginate.
       const tagsEntry = Array.from(this.tagsMap.entries());
@@ -141,14 +137,14 @@ export class PostsTagger {
         }
         // Paginate
         const prefix = `${PostsCollection.basename}_${tag}`;
-        const postsPages = await paginator?.process(posts, prefix);
+        const postsPages = await this.paginator?.process(posts, prefix);
         return {
           tag,
           posts,
           postsPages,
         };
       });
-      const tags: PostTagItem[] = await Promise.all(works);
+      const tags: PostTagsItem[] = await Promise.all(works);
       const tagsJson = JSON.stringify(tags, null, 0);
 
       // Save
@@ -170,7 +166,7 @@ export class PostsTagger {
 
   public async init(): Promise<void> {
     try {
-      const defaultData: PostTagItem[] = [];
+      const defaultData: PostTagsItem[] = [];
       await writeByStream(this.path, JSON.stringify(defaultData, null, 0));
     } catch (error) {
       console.error(`Failed create ${PostsTagger.filename}`, error);
@@ -183,7 +179,7 @@ export class PostsTagger {
 
   public async load(): Promise<void> {
     try {
-      const tags: PostTagItem[] = JSON.parse(await readByStream(this.path));
+      const tags: PostTagsItem[] = JSON.parse(await readByStream(this.path));
       tags.forEach((item) => {
         this.tagsMap.set(item.tag, item.posts);
       });
