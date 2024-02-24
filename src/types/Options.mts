@@ -1,15 +1,27 @@
 import { PostsItem } from "./Posts.mjs";
 
 export enum PostsExcerptRule {
+  /** Extract excerpt by specific lines of markdown content */
   ByLines = 1,
-  CustomTag = 2,
-  NoContent = 3,
-  FullContent = 4,
+
+  /** Extract excerpt by specific tag of markdown content, for example: `<!--more-->` */
+  CustomTag,
+
+  /** Force return empty string */
+  NoContent,
+
+  /** Return markdown content directly  */
+  FullContent,
 }
 
 export interface PostsExcerptOptions {
+  /** Control excerpt analyzing, default: `PostsExcerptRule.ByLines`*/
   rule: PostsExcerptRule;
+
+  /** Specify markdown content max lines, default: `10`  */
   lines?: number;
+
+  /** Specify split tag in the markdown content, default: `<!--more-->` */
   tag?: string;
 }
 
@@ -78,11 +90,11 @@ export interface PostsGeneratorOptions {
 
 /** A enum to control posts categories analyzing type. */
 export enum PostsCategoriesAnalyzeRule {
-  /** Analyze posts categories from markdown directories. */
-  Directory = 1,
-
   /** Analyze posts categories from markdown front matter. */
-  FrontMatter,
+  FrontMatter = 1,
+
+  /** Analyze posts categories from markdown directories. */
+  // Directory,
 
   /** Disable posts categories analyzing. */
   Disable,

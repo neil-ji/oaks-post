@@ -94,7 +94,9 @@ export class PostsManager {
         baseUrl
       );
     }
-    if (categories) {
+
+    // Classifier instance
+    if (categories && categories.rule !== PostsCategoriesAnalyzeRule.Disable) {
       this.classifier = new PostsClassifier(
         {
           outputDir: `${normalizedOutputDir}_${PostsClassifier.basename}`,
