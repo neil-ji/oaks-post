@@ -2,7 +2,6 @@ import { join } from "path";
 import {
   PostsItem,
   RawPostsItem,
-  PostsExcerptRule,
   PostsClassifierOptions,
   PostsCategoriesMap,
   PostFrontMatter,
@@ -11,11 +10,8 @@ import {
 import {
   deleteDir,
   ensureDirExisted,
-  getCustomExcerpt,
-  getExcerpt,
-  getRelativePath,
-  getUrlPath,
   hasExisted,
+  processRawPostsItem,
   readByStream,
   writeByStream,
 } from "./utils.mjs";
@@ -53,58 +49,8 @@ export class PostsClassifier {
     }
   }
 
-  // private processRawPostsItem({
-  //   path,
-  //   hash,
-  //   frontMatter,
-  //   content,
-  // }: RawPostsItem): PostsItem {
-  //   const { excerpt } = this.options;
-  //   const tag = excerpt?.tag || "<!--more-->";
-  //   const lines = excerpt?.lines || 5;
-
-  //   let result: string = "";
-
-  //   switch (excerpt?.rule) {
-  //     case PostsExcerptRule.FullContent:
-  //       break;
-  //     case PostsExcerptRule.NoContent:
-  //       break;
-  //     case PostsExcerptRule.CustomTag:
-  //       result = getCustomExcerpt(content, tag);
-  //       break;
-  //     case PostsExcerptRule.ByLines:
-  //     default:
-  //       result = getExcerpt(content, lines);
-  //       break;
-  //   }
-
-  //   return {
-  //     url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
-  //     hash,
-  //     frontMatter,
-  //     excerpt: result,
-  //   };
-  // }
-
-  private processRawPostsItem({
-    path,
-    hash,
-    frontMatter,
-    content,
-  }: RawPostsItem): PostsItem {
-    const { excerpt } = this.options;
-    const tag = excerpt?.tag || "<!--more-->";
-    const lines = excerpt?.lines || 5;
-    return {
-      url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
-      hash,
-      frontMatter,
-      excerpt:
-        excerpt?.rule === PostsExcerptRule.CustomTag
-          ? getCustomExcerpt(content, tag)
-          : getExcerpt(content, lines),
-    };
+  private processRawPostsItem(rawItem: RawPostsItem): PostsItem {
+    return processRawPostsItem(this.baseUrl, rawItem, this.options.excerpt);
   }
 
   private convertArrayToMap(

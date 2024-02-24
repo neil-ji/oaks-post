@@ -4,17 +4,13 @@ import {
   PostsTaggerOptions,
   PostTagsItem,
   RawPostsItem,
-  PostsExcerptRule,
   PostFrontMatter,
 } from "./types/index.mjs";
 import {
   deleteDir,
   ensureDirExisted,
-  getCustomExcerpt,
-  getExcerpt,
-  getRelativePath,
-  getUrlPath,
   hasExisted,
+  processRawPostsItem,
   readByStream,
   writeByStream,
 } from "./utils.mjs";
@@ -52,28 +48,12 @@ export class PostsTagger {
     }
   }
 
-  private processRawPostItem({
-    path,
-    hash,
-    frontMatter,
-    content,
-  }: RawPostsItem): PostsItem {
-    const { excerpt } = this.options;
-    const tag = excerpt?.tag || "<!--more-->";
-    const lines = excerpt?.lines || 5;
-    return {
-      url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
-      hash,
-      frontMatter,
-      excerpt:
-        excerpt?.rule === PostsExcerptRule.CustomTag
-          ? getCustomExcerpt(content, tag)
-          : getExcerpt(content, lines),
-    };
+  private processRawPostsItem(rawItem: RawPostsItem): PostsItem {
+    return processRawPostsItem(this.baseUrl, rawItem, this.options.excerpt);
   }
 
   public collect(rawItem: RawPostsItem) {
-    const newItem = this.processRawPostItem(rawItem);
+    const newItem = this.processRawPostsItem(rawItem);
     const tags: string[] | undefined =
       newItem.frontMatter?.[this.options.propName!];
     if (!tags) return;

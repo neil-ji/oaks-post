@@ -12,7 +12,12 @@ import {
   sep,
 } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { PostsItem } from "./types/index.mjs";
+import {
+  PostsExcerptOptions,
+  PostsExcerptRule,
+  PostsItem,
+  RawPostsItem,
+} from "./types/index.mjs";
 
 /** path utils */
 
@@ -45,7 +50,7 @@ export function getUrlPath(path: string) {
 
 /** split excerpt */
 
-export function getExcerpt(input: string, limit: number): string {
+function getExcerpt(input: string, limit: number): string {
   const lines = input.split("\n");
   let output = "";
   let codeBlock = false;
@@ -79,8 +84,43 @@ export function getExcerpt(input: string, limit: number): string {
   return output.trim();
 }
 
-export function getCustomExcerpt(content: string, tag: string) {
+function getCustomExcerpt(content: string, tag: string) {
   return content.slice(0, content.indexOf(tag));
+}
+
+export function processRawPostsItem(
+  baseUrl: string,
+  { path, hash, frontMatter, content }: RawPostsItem,
+  { rule, tag, lines }: PostsExcerptOptions = {
+    rule: PostsExcerptRule.ByLines,
+    tag: "<!--more-->",
+    lines: 5,
+  }
+): PostsItem {
+  let excerptedContent: string;
+
+  switch (rule) {
+    case PostsExcerptRule.FullContent:
+      excerptedContent = content;
+      break;
+    case PostsExcerptRule.NoContent:
+      excerptedContent = "";
+      break;
+    case PostsExcerptRule.CustomTag:
+      excerptedContent = getCustomExcerpt(content, tag!);
+      break;
+    case PostsExcerptRule.ByLines:
+    default:
+      excerptedContent = getExcerpt(content, lines!);
+      break;
+  }
+
+  return {
+    url: getUrlPath(join(baseUrl, getRelativePath(path))),
+    hash,
+    frontMatter,
+    excerpt: excerptedContent,
+  };
 }
 
 /** calculate hash value */

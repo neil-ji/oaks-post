@@ -2,11 +2,8 @@ import { join } from "path";
 import {
   deleteDir,
   ensureDirExisted,
-  getCustomExcerpt,
-  getExcerpt,
-  getRelativePath,
-  getUrlPath,
   hasExisted,
+  processRawPostsItem,
   readByStream,
   writeByStream,
 } from "./utils.mjs";
@@ -14,7 +11,6 @@ import {
   Posts,
   PostsCollectionOptions,
   PostsItem,
-  PostsExcerptRule,
   RawPostsItem,
 } from "./types/index.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
@@ -53,24 +49,8 @@ export class PostsCollection {
     }
   }
 
-  private processRawPostItem({
-    path,
-    hash,
-    frontMatter,
-    content,
-  }: RawPostsItem): PostsItem {
-    const { excerpt } = this.options;
-    const tag = excerpt?.tag || "<!--more-->";
-    const lines = excerpt?.lines || 5;
-    return {
-      url: getUrlPath(join(this.baseUrl, getRelativePath(path))),
-      hash,
-      frontMatter,
-      excerpt:
-        excerpt?.rule === PostsExcerptRule.CustomTag
-          ? getCustomExcerpt(content, tag)
-          : getExcerpt(content, lines),
-    };
+  private processRawPostsItem(rawItem: RawPostsItem): PostsItem {
+    return processRawPostsItem(this.baseUrl, rawItem, this.options.excerpt);
   }
 
   private async paginate() {
@@ -124,7 +104,7 @@ export class PostsCollection {
   }
 
   public collect(newItem: RawPostsItem) {
-    this.data.posts.push(this.processRawPostItem(newItem));
+    this.data.posts.push(this.processRawPostsItem(newItem));
   }
 
   public delete(hash: string) {
@@ -141,7 +121,7 @@ export class PostsCollection {
         "Failed modify post item.\nDetails: Cannot find specific item in posts.json"
       );
     } else {
-      this.data.posts[target] = this.processRawPostItem(newItem);
+      this.data.posts[target] = this.processRawPostsItem(newItem);
     }
   }
 
