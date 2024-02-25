@@ -195,7 +195,10 @@ export class PostsManager {
 
     // 3. Handle all changes.
     if (changes.length > 0) {
+      await this.generator.preprocess();
+
       await this.handleChanges(changes);
+
       await this.collection.save();
       await this.tagger?.save();
       await this.classifier?.save();

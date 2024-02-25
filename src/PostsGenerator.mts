@@ -3,6 +3,7 @@ import { dirname, join, relative } from "path";
 import {
   deleteDir,
   deleteFileRecursively,
+  ensureDirExisted,
   hasExisted,
   readByStream,
   writeByStream,
@@ -24,6 +25,10 @@ export class PostsGenerator {
 
   private getParentDir(path: string): string {
     return join(this.outputDir, relative(this.options.inputDir, dirname(path)));
+  }
+
+  public async preprocess() {
+    return ensureDirExisted(this.outputDir);
   }
 
   public async create({ hash, path, key }: FileNode): Promise<RawPostsItem> {
