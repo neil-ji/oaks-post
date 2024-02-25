@@ -3,6 +3,7 @@ export {
   PostFrontMatter,
   PostsItem,
   Posts,
+  Post,
   PostsExcerptOptions,
   PostsExcerptRule,
   PostsPage,

@@ -1,34 +1,70 @@
 # 简介
 
-这是一个专注于**静态博客**场景下 **Markdown 文件批处理**的纯 ES 模块（也就是.mjs），仅支持 Nodejs，批量地将 Markdown 数据以特定格式存储在 JSON 文件中，针对博客场景，提供索引、分页功能。
-
-文档列表 / Documents list：
+文档 / Documents
 
 - [中文](/README.md)
 - [English](/README_EN.md)
+
+注意，`oaks-post`仅适用于 Nodejs 环境。
+
+`oaks-post`是什么？
+
+1. 轻量级，高性能的 Markdown to JSON 库；
+2. 提供静态博客网站常见功能：列表、分页、排序、归档、标签、分类等；
+3. 适用于 Nodejs（注意，不兼容 v14.0.0 之前版本）
+
+`oaks-post`要解决什么？
+
+针对自建静态博客网站，`oaks-post`旨在提供一种跨平台的 Markdown 数据解析及存储方案。
+
+![OaksPostWorkflow.drawio.png](https://img2.imgtp.com/2024/02/24/rle4btsr.png)
+
+在`oaks-post`的帮助下，无需关注 Markdown 解析、列表分页、文章分类等逻辑，可以选用任意 UI 框架搭建自己的博客 App.
+
+只要遵循`oaks-post`所约定的数据格式，即可将业务逻辑简化为单纯的数据展示。
 
 # 功能
 
 已实现：
 
-- 数据查询：
-  - 博客详情：批量解析 markdown 文件（支持 Front Matter 解析），生成`post_[hash]_[basename].json`；
-  - 博客索引：生成`posts.json`，包含所有博客文章的基本信息；
-  - 博客摘要：长内容会按行数或指定的特殊标记（如`<!--more-->`）截取出摘要；
+- Markdown to JSON：
+  - 文章详情：批量解析 markdown 文件，生成`post_[hash]_[basename].json`；
+  - 文章列表：生成`posts.json`，包含所有博客文章的基本信息；
+  - 文章分类：
+    - Tag ：更灵活，不体现层级关系；
+    - Category ：更严谨，有层级关系，类似于文件系统中的目录；
+  - 文章摘要：长内容会按行数或指定的特殊标记（如`<!--more-->`）截取出摘要；
   - 分页：将`posts.json`中的数据分割到若干 JSON 文件中，生成`posts_[page].json`；
   - 排序：对 posts 进行基于时间或自然语言的排序；
+  - Front Matter：支持解析 Front Matter 元数据；
 - 性能优化：
   - 跳过已处理过的文件；
   - 借助分页功能可以实现按需加载；
-  - 流式读写，提高长博客处理效率；
+  - 流式读写，提高大文件处理效率；
+  - 并行优先，异步处理流程合理且高效；
 - 类型检查：完整的 Typescript 类型定义，良好的代码提示；
 
 TODO List：
 
-- JSON 文件压缩/解压缩；
-- 支持 Tag/Category 功能；
+- JSON 压缩/解压缩
+- Archive
+- 文章数据统计
+- 生成 RSS XML
+- 命令行脚本
+- 根据 Markdown 目录结构，自动生成 Category
+- 日志打印美化
+
+注意，以上顺序并非更新顺序，如有新需求或发现 Bug，欢迎创建 issues 一起讨论（中英文不限）。
 
 # 安装
+
+首先，确保 Nodejs 版本号高于 v14.0，否则可能出现兼容性问题。
+
+```bash
+node -v
+```
+
+然后进入指定项目目录，并执行以下指令安装`oaks-post`
 
 ```bash
 npm install oaks-post
@@ -55,98 +91,45 @@ const posts = new PostsManager({
 posts.start();
 ```
 
-举例，`markdown/Hello Oaks.md` 文件如下：
+在决定使用`oaks-post`之前，你可以通过[codesandbox.io](https://codesandbox.io/)免费创建一个 Devbox，选择 Nodejs 模板，然后进行以下配置，即可在浏览器中运行所有示例代码：
 
-```markdown
----
-title: Hello Oaks
-date: 2023-07-25 14:40:00
-tag:
-  - introduce
-  - oaks-post
----
+1. 登录 [codesandbox.io](https://codesandbox.io/) 并创建 Devbox；
+2. 选择 Nodejs 模板，其他选项默认即可；
+3. 安装`oaks-post`；
+4. 创建目录`markdown`，该目录下创建若干 markdown 文件，例如`hello.md`；
+5. 在 `index.js` 中编写示例代码；
+6. 控制台中输入`npm start`，或在已执行 start 的控制台内点击 restart 按钮；
 
-# Oaks Introduction
+注意，由于是在线环境，IO 操作需要稍等片刻才能看到结果（没有结果请刷新），这是服务器到浏览器的延迟所决定的，非性能问题。
 
-This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
-
-This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
-
-This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
-
-This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
-
-This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.
-```
-
-生成博客详情 `json\post_a46fd04a_Hello Oaks.json` 文件如下：
-
-```json
-{
-  "frontMatter": {
-    "title": "Hello Oaks",
-    "date": "2023-07-25T14:40:00.000Z",
-    "tag": ["introduce", "oaks-post"]
-  },
-  "content": "\r\n## Oaks Introduction\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\r\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario."
-}
-```
-
-生成博客索引文件`json_database/posts.json`：
-
-```json
-{
-  "buildTime": "2024-02-17T06:14:11.288Z",
-  "posts": [
-    {
-      "url": "https:/neil-ji.github.io/json/post_a46fd04a_Hello Oaks.json",
-      "hash": "a46fd04a",
-      "frontMatter": {
-        "title": "Hello Oaks",
-        "date": "2023-07-25T14:40:00.000Z",
-        "tag": ["introduce", "oaks-post"]
-      },
-      "excerpt": "## Oaks Introduction\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario."
-    }
-  ]
-}
-```
-
-生成分页文件`json_database/posts_1.json`：
-
-```json
-{
-  "current": 1,
-  "posts": [
-    {
-      "url": "https:/neil-ji.github.io/json/post_a46fd04a_Hello Oaks.json",
-      "hash": "a46fd04a",
-      "frontMatter": {
-        "title": "Hello Oaks",
-        "date": "2023-07-25T14:40:00.000Z",
-        "tag": ["introduce", "oaks-post"]
-      },
-      "excerpt": "## Oaks Introduction\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario.\r\n\nThis is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario."
-    }
-  ]
-}
-```
-
-# 参数定义
+# 配置
 
 你可以传入一个对象以控制 PostsManager 的行为，具体如下：
 
-- `inputDir: string`必填，可传入相对或绝对路径，解析相对路径将默认以`process.cwd()`为参照物，它代表你的 markdown 文件所在目录；
+- `inputDir: string`：必填，可传入相对或绝对路径，解析相对路径将默认以`process.cwd()`为参照物，它代表你的 markdown 文件所在目录；
 - `outputDir: string`：必填，解析规则同`inputDir`，它代表`oaks-post`输出的 json 文件的存放目录；
 - `baseUrl?: string`：可选，默认为空字符串`""`，它将作为 posts.json 中各 post 的 url 前缀；
-- `sort?: (a: PostItem, b: PostItem) => number`：可选，它决定了`posts.json`中 posts 数组的排列顺序，具体用法见[排序](#排序)；
-- `excerpt?: object`可选，用于截取摘要,具体用法见[博客摘要](#博客摘要)：
-  - `rule: PostsExcerptRule`：必填，枚举类型，可选值如下：
-    - `PostsExcerptRule.ByLines`：按行数截取。
-    - `PostsExcerptRule.CustomTag`：按自定义标记截取。
-  - `lines?: number`：可选，指定所截取内容的行数，空行不计，代码块视作一行。
-  - `tag?: string`：可选，截取到指定标记，默认为`<!--more-->`.
-- `itemsPerPage?: number`：可选，指定该值将开启分页功能，默认不启用，具体用法见[博客分页](#博客分页)；
+- `collection?: object`：可选，控制 `posts.json` 的解析及生成；
+  - `outputDir?: string`: 可选，控制 `posts.json` 的输出目录，默认为`${outputDir}_posts`；
+  - `sort?: (a: PostItem, b: PostItem) => number`：可选，它决定了`posts.json`中 posts 数组的排列顺序，具体用法见[排序](#排序)；
+  - `excerpt?: object`可选，用于截取摘要,具体用法见[博客摘要](#博客摘要)：
+    - `rule: PostsExcerptRule`：必填，枚举类型，可选值如下：
+      - `PostsExcerptRule.ByLines`：按行数截取。
+      - `PostsExcerptRule.CustomTag`：按自定义标记截取。
+      - `PostsExcerptRule.NoContent`：强制返回空字符串；
+      - `PostsExcerptRule.FullContent`：不做分割，直接返回 Markdown 内容；
+    - `lines?: number`：可选，指定所截取内容的行数，空行不计，代码块视作一行。
+    - `tag?: string`：可选，截取到指定标记，默认为`<!--more-->`.
+  - `itemsPerPage?: number`：可选，指定该值将开启分页功能，默认不启用，具体用法见[分页](#分页)；
+- `tag?: object`：可选，控制`tags.json`的解析及生成；
+  - `outputDir, sort, excerpt, itemsPerPage` 同上；
+  - `propName?: string`：指定 Front Matter 中记录 Tag 信息的属性名，默认为`tag`；
+- `category?: object`：可选，控制`categories.json`的解析及生成；
+  - `outputDir, sort, excerpt, itemsPerPage` 同上；
+  - `propName?: string`：指定 Front Matter 中记录 Category 信息的属性名，默认为`category`；
+  - `rule?: PostsCategoriesAnalyzeRule`：可选，枚举类型，可选值如下：
+    - `PostsCategoriesAnalyzeRule.FrontMatter`：默认值，从 Front Matter 中解析 Category 信息；
+    - `PostsCategoriesAnalyzeRule.Disable`：忽略 Category 配置，不解析 Category，也不会生成任何文件；
 
 # 博客详情
 
@@ -157,28 +140,190 @@ This is a pure ES module focused on 'Markdown file batch processing' in the stat
 
 博客详情属性定义如下：
 
-1. frontMatter：解析 Front Matter 后生成的键值对，一般用于定义博客元数据，是以`---`标识的 YAML 语法块；
-2. content：Markdown 正文；
+```ts
+interface Post {
+  /** Markdown front matter */
+  frontMatter: PostFrontMatter;
 
-# 博客索引
+  /** Markdown content */
+  content: string;
+}
+```
 
-该文件用于获取全量博客数据的场景，具体来说，`oaks-post`会收集所有 Markdown 处理后的 JSON 数据，将其统一存放在`posts.json`文件中，该文件类似于数据库中表的作用，提供对所有博客详情的索引。
+其余相关类型定义如下：
 
-属性定义如下：
+```ts
+interface PostFrontMatter {
+  [key: string]: any;
+}
+```
+
+# 文章列表
+
+该文件用于获取全量文章列表，`oaks-post`会收集所有 Markdown 处理后的 JSON 数据，并写入`posts.json`，属性定义如下：
 
 ```ts
 interface Posts {
-  buildTime: Date;
-  posts: PostItem[];
+  /** Partial or all posts */
+  posts: PostsItem[];
+
+  /** URLs of posts pages */
+  postsPages?: string[];
 }
-interface PostItem {
+```
+
+其余相关类型定义如下：
+
+```ts
+interface PostsItem extends ExcerptedPost {
+  /** Unique identifier of a post */
   hash?: string;
+
+  /** URL of a post */
   url?: string;
+}
+
+interface ExcerptedPost {
+  /** Markdown front matter */
   frontMatter?: PostFrontMatter;
+
+  /** Excerpt from Markdown content */
   excerpt?: string;
 }
+
 interface PostFrontMatter {
   [key: string]: any;
+}
+```
+
+# 博客分类
+
+Category 和 Tag 都是常用的 Markdown 文章分类方法，它们的具体区别如下：
+
+1. Category（分类）是一种相对静态的分类方式，通常用于对网站文章进行广泛的分组。我们可以将它们视为 WordPress 网站的一般主题或目录。分类具有层级结构，这意味着我们可以创建子分类（sub-category）。例如，图书馆就常常使用分类来整理书籍。
+
+2. Tag（标签）则用于描述文章的具体细节。它更加灵活，不受严格的层级限制。标签可以是关键词、话题、作者、地理信息等。与分类不同，一篇文章可以有多个标签，也可以没有标签。标签更加自然地从具体对象的属性中总结出来，而不需要事先定义。
+
+## Category
+
+Category 相关配置定义如下：
+
+```ts
+interface PostsClassifierOptions extends PostsListBase {
+  /** Control posts categories analyzing. */
+  rule?: PostsCategoriesAnalyzeRule;
+
+  /** Specify prop name in the markdown front matter to replace default prop `category`. */
+  propName?: string;
+}
+
+interface PostsListBase {
+  /** Sort posts array */
+  sort?: (a: PostsItem, b: PostsItem) => number;
+
+  /** Settings for post excerpt analyzing */
+  excerpt?: PostsExcerptOptions;
+
+  /** Enable paginate and specify max items count of per page */
+  itemsPerPage?: number;
+
+  /** Specify output directory for posts and pages. Absolute or relative path are both worked */
+  outputDir?: string;
+}
+```
+
+如果你在 Front Matter 中以`category: [root, sub category]`形式标识文章分类，则无需传入`propName`，否则你需要通过`propName`指定分类数组的键名。
+
+注意 category 书写规则是固定的：元素顺序表示嵌套层级，例如`category: [root, sub category 1, sub category 2]`，root 是根分类，sub category 1 是 root 的子分类，同理，sub category 2 是 sub category 1 的子分类，依此类推。
+
+启用 Category 分类解析后，如果未指定`manager.category.outputDir`属性，将会默认创建目录`${manager.outputDir}_categories`，用作相关文件的输出目录。
+
+分页、排序、摘要参见下文。
+
+启用 Category 特性，会生成`categories.json`文件，包含所有 categories 及文章信息，数据格式被定义为`PostCategoriesItem[]`如下：
+
+```ts
+interface PostCategoriesItem extends Posts {
+  /** Category name */
+  category: string;
+
+  /** Subcategories */
+  subcategories: PostCategoriesItem[];
+}
+
+interface Posts {
+  /** Partial or all posts */
+  posts: PostsItem[];
+
+  /** URLs of posts pages */
+  postsPages?: string[];
+}
+```
+
+categories 是树形结构存储的，以下是一个简单的数据遍历举例：
+
+```ts
+import rawData from "./json_categories/categories.json";
+
+const data: PostCategoriesItem[] = JSON.parse(rawData);
+
+function access(data: PostCategoriesItem[]) {
+  data.forEach(({ posts, postsPages, category, subcategories }) => {
+    // access data as your wish
+    console.log(posts);
+
+    // access subcategories recursively
+    access(subcategories);
+  });
+}
+
+access(data);
+```
+
+## Tag
+
+Tag 相关配置定义如下：
+
+```ts
+interface PostsTaggerOptions extends PostsListBase {
+  /** Specify prop name in the markdown front matter to replace default prop `tag`. */
+  propName?: string;
+}
+interface PostsListBase {
+  /** Sort posts array */
+  sort?: (a: PostsItem, b: PostsItem) => number;
+
+  /** Settings for post excerpt analyzing */
+  excerpt?: PostsExcerptOptions;
+
+  /** Enable paginate and specify max items count of per page */
+  itemsPerPage?: number;
+
+  /** Specify output directory for posts and pages. Absolute or relative path are both worked */
+  outputDir?: string;
+}
+```
+
+如果你在 Front Matter 中以`tag: [js, es6, promise]`形式标识文章分类，则无需传入`propName`，否则你需要通过`propName`指定标签数组的键名，且书写 tag 无需考虑元素顺序，所有标签都是平级的。
+
+启用 Tag 分类解析后，如果未指定`manager.tag.outputDir`属性，将会默认创建目录`${manager.outputDir}_tags`，用作相关文件的输出目录。
+
+分页、排序、摘要参见下文。
+
+启用 Tag 特性，会生成`tags.json`文件，包含所有 tag 及文章信息，数据格式被定义为`PostTagsItem[]`如下：
+
+```ts
+interface PostTagsItem extends Posts {
+  /** Tag name */
+  tag: string;
+}
+
+interface Posts {
+  /** Partial or all posts */
+  posts: PostsItem[];
+
+  /** URLs of posts pages */
+  postsPages?: string[];
 }
 ```
 
@@ -195,9 +340,11 @@ interface PostFrontMatter {
 ```ts
 const posts = new PostsManager({
   // ...others
-  excerptOptions: {
-    rule: PostsExcerptRule.ByLines,
-    lines: 5,
+  collection: {
+    excerpt: {
+      rule: PostsExcerptRule.ByLines,
+      lines: 5,
+    },
   },
 });
 ```
@@ -211,9 +358,11 @@ const posts = new PostsManager({
 ```ts
 const posts = new PostsManager({
   // ...others
-  excerptOptions: {
-    rule: PostsExcerptRule.CustomTag,
-    tag: "<!--YOUR_TAG-->",
+  collection: {
+    excerpt: {
+      rule: PostsExcerptRule.CustomTag,
+      tag: "<!--YOUR_TAG-->",
+    },
   },
 });
 ```
@@ -238,7 +387,6 @@ Hello
 
 ```json
 {
-  "buildTime": "2024-02-17T06:14:11.288Z",
   "posts": [
     {
       // ...others
@@ -248,17 +396,35 @@ Hello
 }
 ```
 
-# 博客分页
+# 分页
 
-当你需要分页或滚动加载数据时，通过`maxItems`启用分页功能，默认**不分页**，传入非法数据时会使用默认值 10.
+当你需要分页或滚动加载数据时，通过`itemsPerPage`启用分页功能，默认**不分页**，传入非法数据时会使用默认值 10.
 
-分页文件命名格式为`posts_[page].json`，page 代表页码，属性定义如下：
+启用分页时，会在对应列表的输出目录下创建`pages`目录，分页文件命名格式为`posts[segment]_[page].json`：
+
+- segment：列表所属的 Tag 或 Category 名；
+- page：代表页码，属性定义如下：
+
+数据格式如下：
 
 ```ts
 interface PostsPage {
+  /** Aggregate of posts pages */
+  pages: number;
+
+  /** Current page index */
   current: number;
-  posts: PostItem[];
+
+  /** Posts list of each page */
+  posts: PostsItem[];
+
+  /** URL of current page */
+  url: string;
+
+  /** URL of previous page */
   prev?: string;
+
+  /** URL of next page */
   next?: string;
 }
 ```
@@ -330,6 +496,7 @@ const posts = new PostsManager({
 首先声明，自然语言排序不同于字符编码排序，具体表现在：
 
 1. 字符编码排序是基于字符的二进制表示进行排序的。例如，在 ASCII 编码中，字符 A 的编码是 65，而字符 B 的编码是 66，所以在字符编码排序中，A 会排在 B 前面。
+
 2. 自然语言排序则更接近人类的排序习惯。例如，自然语言排序会将字符串"2"排在"11"前面，因为 2 小于 11。但在字符编码排序中，"11"会排在"2"前面，因为字符 1 的编码小于字符 2。
 
 你可以借助内置函数`sortLexOrderAscend/sortLexOrderDescend`来实现自然语言排序，它的参数同`sortDateAscend`类似，唯一的区别就是：format 必须返回字符串。
