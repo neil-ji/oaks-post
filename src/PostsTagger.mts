@@ -54,9 +54,12 @@ export class PostsTagger {
 
   public collect(rawItem: RawPostsItem) {
     const newItem = this.processRawPostsItem(rawItem);
-    const tags: string[] | undefined =
+    const propValue: string | string[] | undefined =
       newItem.frontMatter?.[this.options.propName!];
-    if (!tags) return;
+
+    if (!propValue) return;
+
+    const tags = typeof propValue === "string" ? [propValue] : propValue;
 
     tags.forEach((tag) => {
       if (this.tagsMap.has(tag)) {
@@ -69,7 +72,12 @@ export class PostsTagger {
   }
 
   public delete(hash: string, frontMatter: PostFrontMatter) {
-    const tags: string[] = frontMatter[this.options.propName!] || [];
+    const propValue: string | string[] | undefined =
+      frontMatter?.[this.options.propName!];
+
+    if (!propValue) return;
+
+    const tags = typeof propValue === "string" ? [propValue] : propValue;
 
     const deletedTags: string[] = [];
     tags.forEach((tag) => {

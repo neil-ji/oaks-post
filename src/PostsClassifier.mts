@@ -104,9 +104,13 @@ export class PostsClassifier {
   }
 
   public collect(rawItem: RawPostsItem) {
-    const item = this.processRawPostsItem(rawItem);
-    const categories: string[] = item.frontMatter?.[this.options.propName!];
-    if (!categories) return;
+    const newItem = this.processRawPostsItem(rawItem);
+    const propValue: string | string[] | undefined =
+      newItem.frontMatter?.[this.options.propName!];
+
+    if (!propValue) return;
+
+    const categories = typeof propValue === "string" ? [propValue] : propValue;
 
     let p = this.categoriesMap;
     categories.forEach((value, index) => {
@@ -118,7 +122,7 @@ export class PostsClassifier {
       }
 
       if (index === categories.length - 1) {
-        p.get(value)?.posts.push(item);
+        p.get(value)?.posts.push(newItem);
       }
 
       p = p.get(value)!.subcategories;
@@ -126,8 +130,12 @@ export class PostsClassifier {
   }
 
   public delete(hash: string, frontMatter: PostFrontMatter) {
-    const categories: string[] = frontMatter?.[this.options.propName!];
-    if (!categories) return;
+    const propValue: string | string[] | undefined =
+      frontMatter?.[this.options.propName!];
+
+    if (!propValue) return;
+
+    const categories = typeof propValue === "string" ? [propValue] : propValue;
 
     let p = this.categoriesMap;
     categories.forEach((value, index) => {
