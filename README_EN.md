@@ -23,7 +23,7 @@ With the help of `oaks-post`, you don’t need to pay attention to Markdown pars
 
 As long as you follow the data format agreed by `oaks-post`, the business logic can be simplified into simple data display.
 
-# Function
+# Features
 
 Already implemented:
 
@@ -70,7 +70,7 @@ Then enter the specified project directory and execute the following instruction
 npm install oaks-post
 ```
 
-# use
+# Usage
 
 The call is as follows:
 
@@ -80,15 +80,22 @@ import { PostsManager, sortDateAscend } from "oaks-post";
 const yourMarkdownDirectory = "markdown";
 const yourJsonDirectory = "json";
 
-const posts = new PostsManager({
-  baseUrl: "https://neil-ji.github.io/",
-  inputDir: yourMarkdownDirectory,
-  outputDir: yourJsonDirectory,
-  itemsPerPage: 3,
-  sort: sortDateAscend(),
-});
+async function run() {
+  const posts = new PostsManager({
+    baseUrl: "https://neil-ji.github.io/",
+    inputDir: "markdown",
+    outputDir: "json",
+    collection: {
+      itemsPerPage: 5,
+      sort: sortDateAscend(),
+    },
+  });
 
-posts.start();
+  // Use this method clean all outputted files.
+  // await posts.clean();
+
+  await posts.start();
+}
 ```
 
 Before deciding to use `oaks-post`, you can create a Devbox for free through [codesandbox.io](https://codesandbox.io/), select the Nodejs template, and then configure the following to run everything in the browser Sample code:
@@ -102,7 +109,7 @@ Before deciding to use `oaks-post`, you can create a Devbox for free through [co
 
 Note that since it is an online environment, the IO operation will take a while to see the results (please refresh if there are no results). This is determined by the delay from the server to the browser and is not a performance issue.
 
-#Configuration
+# Configuration
 
 You can pass in an object to control the behavior of PostsManager, as follows:
 
@@ -112,7 +119,7 @@ You can pass in an object to control the behavior of PostsManager, as follows:
 - `collection?: object`: optional, controls the parsing and generation of `posts.json`;
   - `outputDir?: string`: optional, controls the output directory of `posts.json`, the default is `${outputDir}_posts`;
   - `sort?: (a: PostItem, b: PostItem) => number`: Optional, it determines the order of the posts array in `posts.json`. For specific usage, see [Sort](#sort);
-  - `excerpt?: object` is optional and is used to intercept the summary. For specific usage, see [Blog Summary](#Blog Summary):
+  - `excerpt?: object` is optional and is used to intercept the summary. For specific usage, see [Excerpt](#excerpt):
     - `rule: PostsExcerptRule`: required, enumeration type, optional values are as follows:
       - `PostsExcerptRule.ByLines`: intercept by line number.
       - `PostsExcerptRule.CustomTag`: intercept according to custom tag.
@@ -120,7 +127,7 @@ You can pass in an object to control the behavior of PostsManager, as follows:
       - `PostsExcerptRule.FullContent`: without splitting, return Markdown content directly;
     - `lines?: number`: Optional, specifies the number of lines of intercepted content. Blank lines are not counted, and the code block is regarded as one line.
     - `tag?: string`: Optional, intercept the specified tag, the default is `<!--more-->`.
-  - `itemsPerPage?: number`: optional. Specifying this value will enable the paging function. It is not enabled by default. For detailed usage, see [Paging](#Paging);
+  - `itemsPerPage?: number`: optional. Specifying this value will enable the paging function. It is not enabled by default. For detailed usage, see [Pagination](#pagination);
 - `tag?: object`: optional, controls the parsing and generation of `tags.json`;
   - `outputDir, sort, excerpt, itemsPerPage` Same as above;
   - `propName?: string`: Specifies the property name used to record Tag information in Front Matter, the default is `tag`;
@@ -131,7 +138,7 @@ You can pass in an object to control the behavior of PostsManager, as follows:
     - `PostsCategoriesAnalyzeRule.FrontMatter`: Default value, parses Category information from Front Matter;
     - `PostsCategoriesAnalyzeRule.Disable`: Ignore Category configuration, do not parse Category, and will not generate any files;
 
-# Blog details
+# Post Details
 
 Each Markdown file will generate a corresponding blog details file with the naming format `post_[hash]_[basename].json`.
 
@@ -158,7 +165,7 @@ interface PostFrontMatter {
 }
 ```
 
-# Article list
+# Posts List
 
 This file is used to obtain the full article list. `oaks-post` will collect all Markdown-processed JSON data and write it into `posts.json`. The attributes are defined as follows:
 
@@ -196,7 +203,7 @@ interface PostFrontMatter {
 }
 ```
 
-# Blog classification
+# Posts Classification
 
 Category and Tag are commonly used Markdown article classification methods. Their specific differences are as follows:
 
@@ -327,7 +334,7 @@ interface Posts {
 }
 ```
 
-#Blog Summary
+# Excerpt
 
 Flexibly control the interception rules of blog abstracts through `excerptOptions`, as detailed below.
 

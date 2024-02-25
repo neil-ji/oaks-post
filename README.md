@@ -80,15 +80,22 @@ import { PostsManager, sortDateAscend } from "oaks-post";
 const yourMarkdownDirectory = "markdown";
 const yourJsonDirectory = "json";
 
-const posts = new PostsManager({
-  baseUrl: "https://neil-ji.github.io/",
-  inputDir: yourMarkdownDirectory,
-  outputDir: yourJsonDirectory,
-  itemsPerPage: 3,
-  sort: sortDateAscend(),
-});
+async function run() {
+  const posts = new PostsManager({
+    baseUrl: "https://neil-ji.github.io/",
+    inputDir: "markdown",
+    outputDir: "json",
+    collection: {
+      itemsPerPage: 5,
+      sort: sortDateAscend(),
+    },
+  });
 
-posts.start();
+  // Use this method clean all outputted files.
+  // await posts.clean();
+
+  await posts.start();
+}
 ```
 
 在决定使用`oaks-post`之前，你可以通过[codesandbox.io](https://codesandbox.io/)免费创建一个 Devbox，选择 Nodejs 模板，然后进行以下配置，即可在浏览器中运行所有示例代码：
