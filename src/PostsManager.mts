@@ -167,6 +167,7 @@ export class PostsManager {
         "Make sure that inputDir which storages your markdown files was existed."
       );
     }
+    await this.generator.preprocess();
     await this.collection.preprocess();
     await this.tagger?.preprocess();
     await this.classifier?.preprocess();
@@ -195,8 +196,6 @@ export class PostsManager {
 
     // 3. Handle all changes.
     if (changes.length > 0) {
-      await this.generator.preprocess();
-
       await this.handleChanges(changes);
 
       await this.collection.save();
