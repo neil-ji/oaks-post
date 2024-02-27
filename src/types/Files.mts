@@ -1,8 +1,8 @@
 export interface FileNode {
-  key: string; // primary key is the basename of file(without extname) or directory.
-  path: string;
-  parent: FileNode | null;
-  hash?: string;
+  key: string;
+  abstractPath: string;
+  relativePath: string;
+  hash: string;
   children?: FileNode[];
 }
 

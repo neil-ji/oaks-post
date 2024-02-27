@@ -26,6 +26,9 @@ export interface PostsItem extends ExcerptedPost {
 
 /** Single post file */
 export interface Post {
+  /** Unique identifier of a post */
+  hash: string;
+
   /** Markdown front matter */
   frontMatter: PostFrontMatter;
 

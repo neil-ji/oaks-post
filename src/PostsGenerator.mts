@@ -1,5 +1,5 @@
 import { mkdir, rename } from "fs/promises";
-import { dirname, join, relative } from "path";
+import { basename, dirname, join } from "path";
 import {
   deleteDir,
   deleteFileRecursively,
@@ -23,87 +23,83 @@ export class PostsGenerator {
     this.options = options;
   }
 
-  private getParentDir(path: string): string {
-    return join(this.outputDir, relative(this.options.inputDir, dirname(path)));
-  }
-
   public async preprocess() {
     return ensureDirExisted(this.outputDir);
   }
 
-  public async create({ hash, path, key }: FileNode): Promise<RawPostsItem> {
+  public async create({
+    hash,
+    relativePath,
+    abstractPath,
+  }: FileNode): Promise<RawPostsItem> {
     try {
       // Make directories
-      const parentDir = this.getParentDir(path);
+      const parentDir = join(this.outputDir, dirname(relativePath));
       await mkdir(parentDir, {
         recursive: true,
       });
 
       // Read and analyze markdown file
-      const markdownContent = await readByStream(path);
+      const markdownContent = await readByStream(abstractPath);
       const { data: frontMatter, content } = grayMatter(markdownContent);
 
       // Create JSON file
-      const jsonContent = JSON.stringify({ frontMatter, content }, null, 0);
-      const jsonFilename = `post_${hash}_${key}.json`;
+      const post: Post = { hash, frontMatter, content };
+      const jsonContent = JSON.stringify(post, null, 0);
+      const jsonFilename = `${basename(abstractPath, ".md")}.json`;
       const jsonPath = join(parentDir, jsonFilename);
       await writeByStream(jsonPath, jsonContent);
       console.log(`Generate post: ${jsonPath}`);
 
-      return { path: jsonPath, hash: hash!, frontMatter, content };
+      return { path: jsonPath, hash, frontMatter, content };
     } catch (error) {
       console.error("Error: failed create post_[hash]_[key].json", error);
       process.exit(1);
     }
   }
 
-  public async delete(node: FileNode): Promise<RawPostsItem> {
+  public async delete({ abstractPath, hash }: FileNode): Promise<RawPostsItem> {
     try {
       // Record file content before delete it
-      const deletedFileContent = await readByStream(node.path);
+      const deletedFileContent = await readByStream(abstractPath);
       const { frontMatter, content } = JSON.parse(deletedFileContent);
 
       // Delete file
-      await deleteFileRecursively(node.path);
-      console.log(`Delete post: ${node.path}`);
+      await deleteFileRecursively(abstractPath);
+      console.log(`Delete post: ${abstractPath}`);
 
-      return { path: node.path, hash: node.hash!, frontMatter, content };
+      return { path: abstractPath, hash, frontMatter, content };
     } catch (error) {
-      console.error(`Failed delete file: ${node.path}`, error);
+      console.error(`Failed delete file: ${abstractPath}`, error);
       process.exit(1);
     }
   }
 
   public async modify(
-    { hash, path, key }: FileNode,
+    { hash, abstractPath, relativePath }: FileNode,
     json: FileNode
   ): Promise<{ newItem: RawPostsItem; oldItem: RawPostsItem }> {
     try {
-      // Make directories
-      const parentDir = this.getParentDir(path);
-
       // Read and analyze markdown file
-      const markdownContent = await readByStream(path);
+      const markdownContent = await readByStream(abstractPath);
       const { data: frontMatter, content } = grayMatter(markdownContent);
 
       // Record old json file before modify it
-      const oldFileContent = await readByStream(json.path);
-      const oldFile: Post = JSON.parse(oldFileContent);
+      const oldFileContent = await readByStream(json.abstractPath);
+      const oldPost: Post = JSON.parse(oldFileContent);
 
-      // Rename and update json file
-      const newFileContent = JSON.stringify({ frontMatter, content }, null, 0);
-      const newFilename = `post_${hash}_${key}.json`;
-      const newFilePath = join(parentDir, newFilename);
-      await rename(json.path, newFilePath);
-      await writeByStream(newFilePath, newFileContent);
-      console.log(`Update post: ${json.path} => ${newFilePath}`);
+      // Update json file
+      const newPost: Post = { hash, frontMatter, content };
+      const newFileContent = JSON.stringify(newPost, null, 0);
+      await writeByStream(json.abstractPath, newFileContent);
+      console.log(`Update post: ${json.abstractPath}`);
 
       return {
-        newItem: { path: newFilePath, hash: hash!, frontMatter, content },
-        oldItem: { ...oldFile, path: json.path, hash: json.hash! },
+        newItem: { ...newPost, path: json.abstractPath },
+        oldItem: { ...oldPost, path: json.abstractPath },
       };
     } catch (error) {
-      console.error("Error: failed update post_[hash]_[key].json", error);
+      console.error(`Failed update ${json.abstractPath}`, error);
       process.exit(1);
     }
   }

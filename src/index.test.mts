@@ -41,7 +41,7 @@ const posts = new PostsManager({
 });
 
 async function run() {
-  await posts.clean();
+  // await posts.clean();
   await posts.start();
 }
 
