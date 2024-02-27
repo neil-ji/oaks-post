@@ -1,5 +1,5 @@
 import { mkdir, rename } from "fs/promises";
-import { basename, dirname, join } from "path";
+import { basename, dirname, extname, join } from "path";
 import {
   deleteDir,
   deleteFileRecursively,
@@ -46,7 +46,10 @@ export class PostsGenerator {
       // Create JSON file
       const post: Post = { hash, frontMatter, content };
       const jsonContent = JSON.stringify(post, null, 0);
-      const jsonFilename = `${basename(abstractPath, ".md")}.json`;
+      const jsonFilename = `${basename(
+        abstractPath,
+        extname(abstractPath)
+      )}.json`;
       const jsonPath = join(parentDir, jsonFilename);
       await writeByStream(jsonPath, jsonContent);
       console.log(`Generate post: ${jsonPath}`);

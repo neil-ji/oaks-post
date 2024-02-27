@@ -160,6 +160,8 @@ export class PostsManager {
   }
 
   public async start() {
+    console.time("Time");
+
     // 0. Validate directory.
     const hasInputDirExisted = await hasExisted(this.inputDir);
     if (!hasInputDirExisted) {
@@ -201,6 +203,7 @@ export class PostsManager {
       await this.collection.save();
       await this.tagger?.save();
       await this.classifier?.save();
+      console.timeEnd("Time");
     } else {
       console.log("Files have no changes.");
     }
