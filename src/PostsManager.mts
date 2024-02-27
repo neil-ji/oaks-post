@@ -176,11 +176,16 @@ export class PostsManager {
 
     // 1. Clear all json files if posts.json hasn't existed.
     const hasCollectionExist = await this.collection.hasExisted();
-    const hasTagsExist = this.tagger && (await this.tagger.hasExisted());
-    const hasCategoriesExist =
-      this.classifier && (await this.classifier.hasExisted());
+    const enableTags = this.tagger;
+    const hasTagsExist = await this.tagger?.hasExisted();
+    const enableCategories = this.classifier;
+    const hasCategoriesExist = await this.classifier?.hasExisted();
 
-    if (!hasCollectionExist || !hasTagsExist || !hasCategoriesExist) {
+    if (
+      !hasCollectionExist ||
+      (enableTags && !hasTagsExist) ||
+      (enableCategories && !hasCategoriesExist)
+    ) {
       await this.clean();
       await this.collection.init();
       await this.tagger?.init();

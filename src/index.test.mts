@@ -22,22 +22,22 @@ const posts = new PostsManager({
     itemsPerPage: 3,
     sort: sortLexOrderDescend(),
   },
-  // tags: {
-  //   sort: sortDateAscend(),
-  //   itemsPerPage: 5,
-  //   excerpt: {
-  //     rule: PostsExcerptRule.ByLines,
-  //     lines: 2,
-  //   },
-  // },
-  // categories: {
-  //   sort: sortDateDescend(),
-  //   itemsPerPage: 2,
-  //   excerpt: {
-  //     rule: PostsExcerptRule.ByLines,
-  //     lines: 1,
-  //   },
-  // },
+  tags: {
+    sort: sortDateAscend(),
+    itemsPerPage: 5,
+    excerpt: {
+      rule: PostsExcerptRule.ByLines,
+      lines: 2,
+    },
+  },
+  categories: {
+    sort: sortDateDescend(),
+    itemsPerPage: 2,
+    excerpt: {
+      rule: PostsExcerptRule.ByLines,
+      lines: 1,
+    },
+  },
 });
 
 async function run() {
