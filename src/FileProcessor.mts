@@ -8,7 +8,7 @@ export class FileProcessor {
   private async extractHash(path: string): Promise<string> {
     const fileExtname = extname(path);
     const content = await readByStream(path);
-    if (fileExtname === ".md") {
+    if (fileExtname === ".md" || fileExtname === ".markdown") {
       return calculateHash(content + path);
     }
     if (fileExtname === ".json") {
@@ -20,7 +20,9 @@ export class FileProcessor {
 
   private isSupportedExtname(path: string) {
     const extensionName = extname(path);
-    return [".json", ".md", ""].some((item) => item === extensionName);
+    return [".json", ".md", ".markdown", ""].some(
+      (item) => item === extensionName
+    );
   }
 
   private equalNode(mdNode?: FileNode, jsonNode?: FileNode): boolean {
