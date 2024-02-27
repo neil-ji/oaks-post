@@ -63,7 +63,7 @@ export class PostsManager {
     // Collection instance
     this.collection = new PostsCollection(
       {
-        outputDir: `${normalizedOutputDir}_${PostsCollection.basename}`,
+        outputDir: `${normalizedOutputDir}_${PostsCollection.dirname}`,
         ...collections,
         excerpt: {
           ...defaultExcerptOptions,

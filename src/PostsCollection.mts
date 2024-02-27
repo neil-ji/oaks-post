@@ -16,6 +16,10 @@ import {
 import { PostsPaginator } from "./PostsPaginator.mjs";
 
 export class PostsCollection {
+  public static get dirname() {
+    return "collections";
+  }
+
   public static get basename() {
     return "posts";
   }
