@@ -15,6 +15,7 @@ import {
 } from "./types/index.mjs";
 import { PostsTagger } from "./PostsTagger.mjs";
 import { PostsClassifier } from "./PostsClassifier.mjs";
+import { join } from "path";
 
 export class PostsManager {
   private collector: PostsCollector;
@@ -28,9 +29,9 @@ export class PostsManager {
     inputDir,
     outputDir,
     baseUrl = "",
-    collections,
-    tags,
-    categories,
+    collection,
+    tag,
+    category,
   }: PostsManagerOptions) {
     // Validate input
     if (inputDir === "") {
@@ -51,67 +52,66 @@ export class PostsManager {
     // Normalize input
     const normalizedInputDir = normalizePath(inputDir);
     const normalizedOutputDir = normalizePath(outputDir);
+    this.inputDir = normalizedInputDir;
+    this.outputDir = normalizedOutputDir;
     const defaultExcerptOptions = {
       rule: PostsExcerptRule.ByLines,
       lines: 5,
       tag: "<!--more-->",
     };
 
-    this.inputDir = normalizedInputDir;
-    this.outputDir = normalizedOutputDir;
-
     // Collection instance
     this.collector = new PostsCollector(
       {
-        outputDir: `${normalizedOutputDir}_${PostsCollector.dirname}`,
-        ...collections,
+        outputDir: join(normalizedOutputDir, PostsCollector.dirname),
+        ...collection,
         excerpt: {
           ...defaultExcerptOptions,
-          ...collections?.excerpt,
+          ...collection?.excerpt,
         },
       },
       baseUrl,
-      generateUniqueHash(JSON.stringify(collections))
+      generateUniqueHash(JSON.stringify(collection))
     );
 
     // Generator instance
     this.generator = new PostsGenerator({
       inputDir: normalizedInputDir,
-      outputDir: normalizedOutputDir,
+      outputDir: join(normalizedOutputDir, PostsGenerator.dirname),
     });
 
     // Tagger instance
-    if (tags) {
+    if (tag) {
       this.tagger = new PostsTagger(
         {
-          outputDir: `${normalizedOutputDir}_${PostsTagger.basename}`,
-          propName: tags.propName || "tag",
-          ...tags,
+          outputDir: join(normalizedOutputDir, PostsTagger.dirname),
+          propName: tag.propName || "tag",
+          ...tag,
           excerpt: {
             ...defaultExcerptOptions,
-            ...tags.excerpt,
+            ...tag.excerpt,
           },
         },
         baseUrl,
-        generateUniqueHash(JSON.stringify(tags))
+        generateUniqueHash(JSON.stringify(tag))
       );
     }
 
     // Classifier instance
-    if (categories && categories.rule !== PostsCategoriesAnalyzeRule.Disable) {
+    if (category && category.rule !== PostsCategoriesAnalyzeRule.Disable) {
       this.classifier = new PostsClassifier(
         {
-          outputDir: `${normalizedOutputDir}_${PostsClassifier.basename}`,
-          rule: categories.rule || PostsCategoriesAnalyzeRule.FrontMatter,
-          propName: categories.propName || "category",
-          ...categories,
+          outputDir: join(normalizedOutputDir, PostsClassifier.dirname),
+          rule: category.rule || PostsCategoriesAnalyzeRule.FrontMatter,
+          propName: category.propName || "category",
+          ...category,
           excerpt: {
             ...defaultExcerptOptions,
-            ...categories.excerpt,
+            ...category.excerpt,
           },
         },
         baseUrl,
-        generateUniqueHash(JSON.stringify(categories))
+        generateUniqueHash(JSON.stringify(category))
       );
     }
   }
@@ -165,15 +165,19 @@ export class PostsManager {
   private handleSave() {
     const works = [];
     if (this.collector.hasOptionsChanged) {
-      console.log("Rebuild posts collection.");
+      console.log(
+        "Rebuild posts collection because of collection option has changed."
+      );
       works.push(this.collector.save());
     }
     if (this.tagger?.hasOptionsChanged) {
-      console.log("Rebuild tags collection.");
+      console.log("Rebuild tags collection because of tag option has changed.");
       works.push(this.tagger?.save());
     }
     if (this.classifier?.hasOptionsChanged) {
-      console.log("Rebuild categories collection.");
+      console.log(
+        "Rebuild categories collection because of categories option has changed."
+      );
       works.push(this.classifier?.save());
     }
 
@@ -200,6 +204,7 @@ export class PostsManager {
         "Make sure that inputDir which storages your markdown files was existed."
       );
     }
+    await ensureDirExisted(this.outputDir);
     await Promise.all([
       this.generator.preprocess(),
       this.collector.preprocess(),
@@ -235,7 +240,7 @@ export class PostsManager {
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
     const fileProcessor = new FileProcessor();
     const markdownTree = await fileProcessor.build(this.inputDir);
-    const jsonTree = await fileProcessor.build(this.outputDir);
+    const jsonTree = await fileProcessor.build(this.generator.outputDir);
     const changes = await fileProcessor.compare(markdownTree, jsonTree);
 
     // 3. Handle all changes.
@@ -243,9 +248,9 @@ export class PostsManager {
       await this.handleChanges(changes);
       await this.forceSave();
     } else {
+      console.log("Posts have not changed.");
       await this.handleSave();
     }
-    console.log("Processing files is done.");
     console.timeEnd("Time");
   }
 }

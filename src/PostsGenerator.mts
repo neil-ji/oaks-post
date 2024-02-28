@@ -17,13 +17,17 @@ import {
 } from "./types/index.mjs";
 
 export class PostsGenerator {
+  public static get dirname() {
+    return "posts";
+  }
+
   private options: PostsGeneratorOptions;
 
   constructor(options: PostsGeneratorOptions) {
     this.options = options;
   }
 
-  public async preprocess() {
+  public preprocess() {
     return ensureDirExisted(this.outputDir);
   }
 

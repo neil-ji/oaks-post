@@ -14,7 +14,7 @@ const posts = new PostsManager({
   baseUrl: "https://neil-ji.github.io/",
   inputDir: yourMarkdownDirectory,
   outputDir: yourJsonDirectory,
-  collections: {
+  collection: {
     excerpt: {
       rule: PostsExcerptRule.CustomTag,
       tag: "<!--YOUR_TAG-->",
@@ -22,22 +22,22 @@ const posts = new PostsManager({
     itemsPerPage: 4,
     sort: sortLexOrderDescend(),
   },
-  tags: {
-    sort: sortDateAscend(),
-    itemsPerPage: 5,
-    excerpt: {
-      rule: PostsExcerptRule.ByLines,
-      lines: 2,
-    },
-  },
-  categories: {
-    sort: sortDateDescend(),
-    itemsPerPage: 2,
-    excerpt: {
-      rule: PostsExcerptRule.ByLines,
-      lines: 1,
-    },
-  },
+  // tag: {
+  //   sort: sortDateAscend(),
+  //   itemsPerPage: 5,
+  //   excerpt: {
+  //     rule: PostsExcerptRule.ByLines,
+  //     lines: 2,
+  //   },
+  // },
+  // category: {
+  //   sort: sortDateDescend(),
+  //   // itemsPerPage: 2,
+  //   excerpt: {
+  //     rule: PostsExcerptRule.ByLines,
+  //     lines: 1,
+  //   },
+  // },
 });
 
 async function run() {

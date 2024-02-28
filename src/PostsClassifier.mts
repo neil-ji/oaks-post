@@ -23,6 +23,9 @@ export class PostsClassifier {
   public static get basename() {
     return "categories";
   }
+  public static get dirname() {
+    return "categories_collection";
+  }
 
   public static get filename() {
     return `${this.basename}.json`;
@@ -168,7 +171,7 @@ export class PostsClassifier {
     this.collect(newItem);
   }
 
-  public async preprocess() {
+  public preprocess() {
     return ensureDirExisted(this.outputDir);
   }
 

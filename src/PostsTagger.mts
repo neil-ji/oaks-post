@@ -23,6 +23,10 @@ export class PostsTagger {
     return "tags";
   }
 
+  public static get dirname() {
+    return "tags_collection";
+  }
+
   public static get filename() {
     return `${this.basename}.json`;
   }
@@ -110,7 +114,7 @@ export class PostsTagger {
     this.collect(newItem);
   }
 
-  public async preprocess() {
+  public preprocess() {
     return ensureDirExisted(this.outputDir);
   }
 

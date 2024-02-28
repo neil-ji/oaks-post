@@ -18,7 +18,7 @@ import { PostsPaginator } from "./PostsPaginator.mjs";
 
 export class PostsCollector {
   public static get dirname() {
-    return "collections";
+    return "posts_collection";
   }
 
   public static get basename() {
@@ -74,7 +74,7 @@ export class PostsCollector {
     );
   }
 
-  public async preprocess() {
+  public preprocess() {
     return ensureDirExisted(this.outputDir);
   }
 

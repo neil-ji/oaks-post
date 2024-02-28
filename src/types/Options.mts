@@ -71,15 +71,15 @@ export interface PostsManagerOptions {
   baseUrl?: string;
 
   /** Settings for posts collection */
-  collections?: PostsCollectorOptions;
+  collection?: Omit<PostsCollectorOptions, "outputDir">;
 
   /** Settings for tags */
-  tags?: PostsTaggerOptions;
+  tag?: Omit<PostsTaggerOptions, "outputDir">;
 
   // archives?: PostsArchiveOptions;
 
   /** Settings for categories */
-  categories?: PostsClassifierOptions;
+  category?: Omit<PostsClassifierOptions, "outputDir">;
 }
 
 /** PostsGenerator */
