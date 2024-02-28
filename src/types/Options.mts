@@ -41,8 +41,8 @@ interface PostsListBase {
   outputDir?: string;
 }
 
-/** PostsCollection */
-export interface PostsCollectionOptions extends PostsListBase {}
+/** PostsCollector */
+export interface PostsCollectorOptions extends PostsListBase {}
 
 /** PostsTagger */
 export interface PostsTaggerOptions extends PostsListBase {
@@ -71,14 +71,14 @@ export interface PostsManagerOptions {
   baseUrl?: string;
 
   /** Settings for posts collection */
-  collections?: PostsCollectionOptions;
+  collections?: PostsCollectorOptions;
 
-  /** Settings for posts tags */
+  /** Settings for tags */
   tags?: PostsTaggerOptions;
 
   // archives?: PostsArchiveOptions;
 
-  /** Settings for posts categories */
+  /** Settings for categories */
   categories?: PostsClassifierOptions;
 }
 

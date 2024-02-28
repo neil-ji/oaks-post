@@ -58,6 +58,11 @@ export interface PostsPage {
 }
 
 /** Posts collection file */
+export interface PostsCollection extends Posts {
+  /** Unique identifier of outputted resource every times */
+  version: string;
+}
+
 export interface Posts {
   /** Partial or all posts */
   posts: PostsItem[];
@@ -67,12 +72,28 @@ export interface Posts {
 }
 
 /** Posts tags collection file */
+export interface PostTagsCollection {
+  /** Unique identifier of outputted resource every times */
+  version: string;
+
+  /** All tags */
+  tags: PostTagsItem[];
+}
+
 export interface PostTagsItem extends Posts {
   /** Tag name */
   tag: string;
 }
 
 /** Posts categories collection file */
+export interface PostCategoriesCollection {
+  /** Unique identifier of outputted resource every times */
+  version: string;
+
+  /** All categories */
+  categories: PostCategoriesItem[];
+}
+
 export interface PostCategoriesItem extends Posts {
   /** Category name */
   category: string;

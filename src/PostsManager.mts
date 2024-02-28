@@ -1,5 +1,5 @@
 import { FileProcessor } from "./FileProcessor.mjs";
-import { PostsCollection } from "./PostsCollection.mjs";
+import { PostsCollector } from "./PostsCollector.mjs";
 import { PostsGenerator } from "./PostsGenerator.mjs";
 import {
   ensureDirExisted,
@@ -17,7 +17,7 @@ import { PostsTagger } from "./PostsTagger.mjs";
 import { PostsClassifier } from "./PostsClassifier.mjs";
 
 export class PostsManager {
-  private collection: PostsCollection;
+  private collector: PostsCollector;
   private generator: PostsGenerator;
   private tagger?: PostsTagger;
   private classifier?: PostsClassifier;
@@ -61,16 +61,17 @@ export class PostsManager {
     this.outputDir = normalizedOutputDir;
 
     // Collection instance
-    this.collection = new PostsCollection(
+    this.collector = new PostsCollector(
       {
-        outputDir: `${normalizedOutputDir}_${PostsCollection.dirname}`,
+        outputDir: `${normalizedOutputDir}_${PostsCollector.dirname}`,
         ...collections,
         excerpt: {
           ...defaultExcerptOptions,
           ...collections?.excerpt,
         },
       },
-      baseUrl
+      baseUrl,
+      generateUniqueHash(JSON.stringify(collections))
     );
 
     // Generator instance
@@ -91,7 +92,8 @@ export class PostsManager {
             ...tags.excerpt,
           },
         },
-        baseUrl
+        baseUrl,
+        generateUniqueHash(JSON.stringify(tags))
       );
     }
 
@@ -108,7 +110,8 @@ export class PostsManager {
             ...categories.excerpt,
           },
         },
-        baseUrl
+        baseUrl,
+        generateUniqueHash(JSON.stringify(categories))
       );
     }
   }
@@ -116,7 +119,7 @@ export class PostsManager {
   private async handleDelete({ json }: Change) {
     if (!json) return;
     const { hash, frontMatter } = await this.generator.delete(json);
-    this.collection.delete(hash);
+    this.collector.delete(hash);
     this.tagger?.delete(hash, frontMatter);
     this.classifier?.delete(hash, frontMatter);
   }
@@ -124,7 +127,7 @@ export class PostsManager {
   private async handleCreate({ markdown }: Change) {
     if (!markdown) return;
     const rawPost = await this.generator.create(markdown);
-    this.collection.collect(rawPost);
+    this.collector.collect(rawPost);
     this.tagger?.collect(rawPost);
     this.classifier?.collect(rawPost);
   }
@@ -132,7 +135,7 @@ export class PostsManager {
   private async handleModify(change: Required<Change>) {
     const { json, markdown } = change;
     const { oldItem, newItem } = await this.generator.modify(markdown, json);
-    this.collection.modify(newItem, oldItem.hash);
+    this.collector.modify(newItem, oldItem.hash);
     this.tagger?.modify(newItem, oldItem);
     this.classifier?.modify(newItem, oldItem);
   }
@@ -149,10 +152,38 @@ export class PostsManager {
     }
   }
 
+  private forceSave() {
+    const works = [
+      this.collector.save(),
+      this.tagger?.save(),
+      this.classifier?.save(),
+    ];
+
+    return Promise.all(works);
+  }
+
+  private handleSave() {
+    const works = [];
+    if (this.collector.hasOptionsChanged) {
+      console.log("Rebuild posts collection.");
+      works.push(this.collector.save());
+    }
+    if (this.tagger?.hasOptionsChanged) {
+      console.log("Rebuild tags collection.");
+      works.push(this.tagger?.save());
+    }
+    if (this.classifier?.hasOptionsChanged) {
+      console.log("Rebuild categories collection.");
+      works.push(this.classifier?.save());
+    }
+
+    return Promise.all(works);
+  }
+
   public async clean() {
     const works = [
       this.generator.clean(),
-      this.collection.clean(),
+      this.collector.clean(),
       this.tagger?.clean(),
       this.classifier?.clean(),
     ];
@@ -169,13 +200,15 @@ export class PostsManager {
         "Make sure that inputDir which storages your markdown files was existed."
       );
     }
-    await this.generator.preprocess();
-    await this.collection.preprocess();
-    await this.tagger?.preprocess();
-    await this.classifier?.preprocess();
+    await Promise.all([
+      this.generator.preprocess(),
+      this.collector.preprocess(),
+      this.tagger?.preprocess(),
+      this.classifier?.preprocess(),
+    ]);
 
     // 1. Clear all json files if posts.json hasn't existed.
-    const hasCollectionExist = await this.collection.hasExisted();
+    const hasCollectionExist = await this.collector.hasExisted();
     const enableTags = this.tagger;
     const hasTagsExist = await this.tagger?.hasExisted();
     const enableCategories = this.classifier;
@@ -187,13 +220,17 @@ export class PostsManager {
       (enableCategories && !hasCategoriesExist)
     ) {
       await this.clean();
-      await this.collection.init();
-      await this.tagger?.init();
-      await this.classifier?.init();
+      await Promise.all([
+        this.collector.init(),
+        this.tagger?.init(),
+        this.classifier?.init(),
+      ]);
     }
-    await this.collection.load();
-    await this.tagger?.load();
-    await this.classifier?.load();
+    await Promise.all([
+      this.collector.load(),
+      this.tagger?.load(),
+      this.classifier?.load(),
+    ]);
 
     // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
     const fileProcessor = new FileProcessor();
@@ -204,13 +241,11 @@ export class PostsManager {
     // 3. Handle all changes.
     if (changes.length > 0) {
       await this.handleChanges(changes);
-
-      await this.collection.save();
-      await this.tagger?.save();
-      await this.classifier?.save();
-      console.timeEnd("Time");
+      await this.forceSave();
     } else {
-      console.log("Files have no changes.");
+      await this.handleSave();
     }
+    console.log("Processing files is done.");
+    console.timeEnd("Time");
   }
 }

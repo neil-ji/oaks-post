@@ -9,13 +9,14 @@ import {
 } from "./utils.mjs";
 import {
   Posts,
-  PostsCollectionOptions,
+  PostsCollection,
+  PostsCollectorOptions,
   PostsItem,
   RawPostsItem,
 } from "./types/index.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
 
-export class PostsCollection {
+export class PostsCollector {
   public static get dirname() {
     return "collections";
   }
@@ -30,18 +31,26 @@ export class PostsCollection {
 
   private data: Posts;
   private path: string;
-  private options: PostsCollectionOptions;
+  private options: PostsCollectorOptions;
   private baseUrl: string;
   private paginator?: PostsPaginator;
+  private currentVersion: string;
+  private previousVersion: string;
 
-  constructor(options: PostsCollectionOptions, baseUrl: string) {
+  constructor(
+    options: PostsCollectorOptions,
+    baseUrl: string,
+    version: string
+  ) {
     this.data = {
       posts: [],
       postsPages: [],
     };
     this.options = options;
-    this.path = join(options.outputDir!, PostsCollection.filename);
+    this.path = join(options.outputDir!, PostsCollector.filename);
     this.baseUrl = baseUrl;
+    this.currentVersion = version;
+    this.previousVersion = "";
 
     const { itemsPerPage } = this.options;
     if (itemsPerPage) {
@@ -60,7 +69,9 @@ export class PostsCollection {
   private async paginate() {
     await this.paginator?.clean();
     await this.paginator?.preprocess();
-    return this.paginator?.process(this.posts, PostsCollection.basename) || [];
+    return (
+      this.paginator?.process(this.data.posts, PostsCollector.basename) || []
+    );
   }
 
   public async preprocess() {
@@ -79,31 +90,44 @@ export class PostsCollection {
     this.data.postsPages = await this.paginate();
 
     // Save
-    const postsJson = JSON.stringify(this.data, null, 0);
-    await writeByStream(this.path, postsJson);
-  }
-
-  public async init(): Promise<void> {
-    try {
-      const defaultData: Posts = {
-        posts: [],
-        postsPages: [],
-      };
-      await writeByStream(this.path, JSON.stringify(defaultData, null, 0));
-    } catch (error) {
-      console.error(`Failed create ${PostsCollection.filename}`, error);
-    }
+    const collection: PostsCollection = {
+      version: this.currentVersion,
+      ...this.data,
+    };
+    const json = JSON.stringify(collection, null, 0);
+    await writeByStream(this.path, json);
   }
 
   public async hasExisted(): Promise<boolean> {
     return hasExisted(this.path);
   }
 
+  public async init(): Promise<void> {
+    try {
+      const collection: PostsCollection = {
+        version: this.currentVersion,
+        ...this.data,
+      };
+      const json = JSON.stringify(collection, null, 0);
+      await writeByStream(this.path, json);
+    } catch (error) {
+      console.error(`Failed create ${PostsCollector.filename}`, error);
+    }
+  }
+
   public async load(): Promise<void> {
     try {
-      this.data = JSON.parse(await readByStream(this.path));
+      const { posts, postsPages, version }: PostsCollection = JSON.parse(
+        await readByStream(this.path)
+      );
+
+      this.data = {
+        posts,
+        postsPages,
+      };
+      this.previousVersion = version;
     } catch (error) {
-      console.error(`Failed load ${PostsCollection.filename}`, error);
+      console.error(`Failed load ${PostsCollector.filename}`, error);
     }
   }
 
@@ -129,10 +153,6 @@ export class PostsCollection {
     }
   }
 
-  public get posts(): PostsItem[] {
-    return JSON.parse(JSON.stringify(this.data.posts));
-  }
-
   public get outputDir(): string {
     return this.options.outputDir!;
   }
@@ -141,5 +161,9 @@ export class PostsCollection {
     if (await hasExisted(this.outputDir)) {
       await deleteDir(this.outputDir);
     }
+  }
+
+  public get hasOptionsChanged() {
+    return this.currentVersion !== this.previousVersion;
   }
 }

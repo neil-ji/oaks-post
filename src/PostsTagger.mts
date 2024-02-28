@@ -5,6 +5,7 @@ import {
   PostTagsItem,
   RawPostsItem,
   PostFrontMatter,
+  PostTagsCollection,
 } from "./types/index.mjs";
 import {
   deleteDir,
@@ -15,7 +16,7 @@ import {
   writeByStream,
 } from "./utils.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
-import { PostsCollection } from "./PostsCollection.mjs";
+import { PostsCollector } from "./PostsCollector.mjs";
 
 export class PostsTagger {
   public static get basename() {
@@ -31,12 +32,16 @@ export class PostsTagger {
   private tagsMap: Map<string, PostsItem[]>;
   private path: string;
   private paginator?: PostsPaginator;
+  private currentVersion: string;
+  private previousVersion: string;
 
-  constructor(options: PostsTaggerOptions, baseUrl: string) {
+  constructor(options: PostsTaggerOptions, baseUrl: string, version: string) {
     this.options = options;
     this.path = join(options.outputDir!, PostsTagger.filename);
     this.baseUrl = baseUrl;
     this.tagsMap = new Map();
+    this.currentVersion = version;
+    this.previousVersion = "";
 
     const { itemsPerPage } = this.options;
     if (itemsPerPage) {
@@ -124,7 +129,7 @@ export class PostsTagger {
           posts.sort(sortImpl);
         }
         // Paginate
-        const prefix = `${PostsCollection.basename}_${tag}`;
+        const prefix = `${PostsCollector.basename}_${tag}`;
         const postsPages = await this.paginator?.process(posts, prefix);
         return {
           tag,
@@ -133,10 +138,14 @@ export class PostsTagger {
         };
       });
       const tags: PostTagsItem[] = await Promise.all(works);
-      const tagsJson = JSON.stringify(tags, null, 0);
+      const data: PostTagsCollection = {
+        version: this.currentVersion,
+        tags,
+      };
+      const json = JSON.stringify(data, null, 0);
 
       // Save
-      await writeByStream(this.path, tagsJson);
+      await writeByStream(this.path, json);
     } catch (error) {
       throw console.error("Failed analyze tags of posts.", error);
     }
@@ -154,7 +163,10 @@ export class PostsTagger {
 
   public async init(): Promise<void> {
     try {
-      const defaultData: PostTagsItem[] = [];
+      const defaultData: PostTagsCollection = {
+        version: this.currentVersion,
+        tags: [],
+      };
       await writeByStream(this.path, JSON.stringify(defaultData, null, 0));
     } catch (error) {
       console.error(`Failed create ${PostsTagger.filename}`, error);
@@ -167,12 +179,19 @@ export class PostsTagger {
 
   public async load(): Promise<void> {
     try {
-      const tags: PostTagsItem[] = JSON.parse(await readByStream(this.path));
+      const { tags, version }: PostTagsCollection = JSON.parse(
+        await readByStream(this.path)
+      );
       tags.forEach((item) => {
         this.tagsMap.set(item.tag, item.posts);
       });
+      this.previousVersion = version;
     } catch (error) {
       console.error(`Failed load ${PostsTagger.filename}`, error);
     }
+  }
+
+  public get hasOptionsChanged() {
+    return this.currentVersion !== this.previousVersion;
   }
 }

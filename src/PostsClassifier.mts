@@ -6,6 +6,7 @@ import {
   PostsCategoriesMap,
   PostFrontMatter,
   PostCategoriesItem,
+  PostCategoriesCollection,
 } from "./types/index.mjs";
 import {
   deleteDir,
@@ -16,7 +17,7 @@ import {
   writeByStream,
 } from "./utils.mjs";
 import { PostsPaginator } from "./PostsPaginator.mjs";
-import { PostsCollection } from "./PostsCollection.mjs";
+import { PostsCollector } from "./PostsCollector.mjs";
 
 export class PostsClassifier {
   public static get basename() {
@@ -32,12 +33,20 @@ export class PostsClassifier {
   private categoriesMap: PostsCategoriesMap;
   private path: string;
   private paginator?: PostsPaginator;
+  private currentVersion: string;
+  private previousVersion: string;
 
-  constructor(options: PostsClassifierOptions, baseUrl: string) {
+  constructor(
+    options: PostsClassifierOptions,
+    baseUrl: string,
+    version: string
+  ) {
     this.options = options;
     this.path = join(options.outputDir!, PostsClassifier.filename);
     this.baseUrl = baseUrl;
     this.categoriesMap = new Map();
+    this.currentVersion = version;
+    this.previousVersion = "";
 
     const { itemsPerPage } = this.options;
     if (itemsPerPage) {
@@ -170,11 +179,15 @@ export class PostsClassifier {
       await this.paginator?.preprocess();
 
       // Convert data and paginate.
-      const categories = this.convertMapToArray(this.categoriesMap);
-      const data = await this.processFiles(
-        categories,
-        PostsCollection.basename
+      const rawCategories = this.convertMapToArray(this.categoriesMap);
+      const categories = await this.processFiles(
+        rawCategories,
+        PostsCollector.basename
       );
+      const data: PostCategoriesCollection = {
+        version: this.currentVersion,
+        categories,
+      };
 
       // Save
       const json = JSON.stringify(data, null, 0);
@@ -196,7 +209,10 @@ export class PostsClassifier {
 
   public async init(): Promise<void> {
     try {
-      const defaultData: PostCategoriesItem[] = [];
+      const defaultData: PostCategoriesCollection = {
+        version: this.currentVersion,
+        categories: [],
+      };
       await writeByStream(this.path, JSON.stringify(defaultData, null, 0));
     } catch (error) {
       console.error(`Failed create ${PostsClassifier.filename}`, error);
@@ -209,12 +225,17 @@ export class PostsClassifier {
 
   public async load(): Promise<void> {
     try {
-      const categories: PostCategoriesItem[] = JSON.parse(
+      const { categories, version }: PostCategoriesCollection = JSON.parse(
         await readByStream(this.path)
       );
       this.categoriesMap = this.convertArrayToMap(categories);
+      this.previousVersion = version;
     } catch (error) {
       console.error(`Failed load ${PostsClassifier.filename}`, error);
     }
+  }
+
+  public get hasOptionsChanged() {
+    return this.currentVersion !== this.previousVersion;
   }
 }
