@@ -3,7 +3,7 @@ import { basename, dirname, extname, join } from "path";
 import {
   deleteDir,
   deleteFileRecursively,
-  ensureDirExisted,
+  ensureDirExist,
   hasExisted,
   readByStream,
   writeByStream,
@@ -28,7 +28,7 @@ export class PostsGenerator {
   }
 
   public preprocess() {
-    return ensureDirExisted(this.outputDir);
+    return ensureDirExist(this.outputDir);
   }
 
   public async create({

@@ -123,7 +123,7 @@ export function processRawPostsItem(
   };
 }
 
-/** calculate hash value */
+/** hash */
 
 export function calculateHash(content: string, length = 8) {
   const hash = murmurhash.v3(content);
@@ -227,7 +227,7 @@ export async function hasExisted(path: string) {
   }
 }
 
-export async function ensureDirExisted(dir: string) {
+export async function ensureDirExist(dir: string) {
   try {
     // Check if directory exists
     await access(dir);

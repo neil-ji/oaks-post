@@ -2,7 +2,7 @@ import { FileProcessor } from "./FileProcessor.mjs";
 import { PostsCollector } from "./PostsCollector.mjs";
 import { PostsGenerator } from "./PostsGenerator.mjs";
 import {
-  ensureDirExisted,
+  ensureDirExist,
   generateUniqueHash,
   hasExisted,
   normalizePath,
@@ -142,7 +142,7 @@ export class PostsManager {
 
   private async handleChanges(changes: Change[]) {
     // Check existence of the generator output directory.
-    await ensureDirExisted(this.generator.outputDir);
+    await ensureDirExist(this.generator.outputDir);
 
     // Handle all changes.
     for (const change of changes) {
@@ -195,34 +195,40 @@ export class PostsManager {
   }
 
   public async start() {
+    // 1. Define variables.
     console.time("Time");
+    const enableTag = this.tagger !== undefined;
+    const enableCategory = this.classifier !== undefined;
 
-    // 0. Validate directory.
+    // 2. Validate and make directory.
     const hasInputDirExisted = await hasExisted(this.inputDir);
     if (!hasInputDirExisted) {
       throw new Error(
         "Make sure that inputDir which storages your markdown files was existed."
       );
     }
-    await ensureDirExisted(this.outputDir);
+    await ensureDirExist(this.outputDir);
     await Promise.all([
       this.generator.preprocess(),
       this.collector.preprocess(),
-      this.tagger?.preprocess(),
-      this.classifier?.preprocess(),
+      enableTag ? this.tagger?.preprocess() : PostsTagger.clean(this.outputDir),
+      enableCategory
+        ? this.classifier?.preprocess()
+        : PostsClassifier.clean(this.outputDir),
     ]);
 
-    // 1. Clear all json files if posts.json hasn't existed.
-    const hasCollectionExist = await this.collector.hasExisted();
-    const enableTags = this.tagger;
-    const hasTagsExist = await this.tagger?.hasExisted();
-    const enableCategories = this.classifier;
-    const hasCategoriesExist = await this.classifier?.hasExisted();
+    // 3. Clear all json files if posts.json hasn't existed.
+    const [hasCollectionExist, hasTagsExist, hasCategoriesExist] =
+      await Promise.all([
+        this.collector.hasExisted(),
+        this.tagger?.hasExisted(),
+        this.classifier?.hasExisted(),
+      ]);
 
     if (
       !hasCollectionExist ||
-      (enableTags && !hasTagsExist) ||
-      (enableCategories && !hasCategoriesExist)
+      (enableTag && !hasTagsExist) ||
+      (enableCategory && !hasCategoriesExist)
     ) {
       await this.clean();
       await Promise.all([
@@ -237,13 +243,15 @@ export class PostsManager {
       this.classifier?.load(),
     ]);
 
-    // 2. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
+    // 4. Read and compare files tree (markdown and json), simultaneously, collect changes of files.
     const fileProcessor = new FileProcessor();
-    const markdownTree = await fileProcessor.build(this.inputDir);
-    const jsonTree = await fileProcessor.build(this.generator.outputDir);
+    const [markdownTree, jsonTree] = await Promise.all([
+      fileProcessor.build(this.inputDir),
+      fileProcessor.build(this.generator.outputDir),
+    ]);
     const changes = await fileProcessor.compare(markdownTree, jsonTree);
 
-    // 3. Handle all changes.
+    // 5. Handle all changes.
     if (changes.length > 0) {
       await this.handleChanges(changes);
       await this.forceSave();

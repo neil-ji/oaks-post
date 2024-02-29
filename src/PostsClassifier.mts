@@ -10,7 +10,7 @@ import {
 } from "./types/index.mjs";
 import {
   deleteDir,
-  ensureDirExisted,
+  ensureDirExist,
   hasExisted,
   processRawPostsItem,
   readByStream,
@@ -20,6 +20,12 @@ import { PostsPaginator } from "./PostsPaginator.mjs";
 import { PostsCollector } from "./PostsCollector.mjs";
 
 export class PostsClassifier {
+  public static async clean(outputDir: string) {
+    const dir = join(outputDir, this.dirname);
+    if (await hasExisted(dir)) {
+      await deleteDir(dir);
+    }
+  }
   public static get basename() {
     return "categories";
   }
@@ -172,14 +178,18 @@ export class PostsClassifier {
   }
 
   public preprocess() {
-    return ensureDirExisted(this.outputDir);
+    return ensureDirExist(this.outputDir);
   }
 
   public async save() {
     try {
       // Prepare to paginate
-      await this.paginator?.clean();
-      await this.paginator?.preprocess();
+      if (this.paginator) {
+        await this.paginator.clean();
+        await this.paginator.preprocess();
+      } else {
+        await PostsPaginator.clean(this.outputDir);
+      }
 
       // Convert data and paginate.
       const rawCategories = this.convertMapToArray(this.categoriesMap);
@@ -187,13 +197,13 @@ export class PostsClassifier {
         rawCategories,
         PostsCollector.basename
       );
-      const data: PostCategoriesCollection = {
+      const collection: PostCategoriesCollection = {
         version: this.currentVersion,
         categories,
       };
 
       // Save
-      const json = JSON.stringify(data, null, 0);
+      const json = JSON.stringify(collection, null, 0);
       await writeByStream(this.path, json);
     } catch (error) {
       throw console.error("Failed analyze tags of posts.", error);

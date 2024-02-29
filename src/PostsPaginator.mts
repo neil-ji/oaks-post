@@ -1,7 +1,7 @@
 import { join } from "path";
 import {
   deleteDir,
-  ensureDirExisted,
+  ensureDirExist,
   getRelativePath,
   getUrlPath,
   hasExisted,
@@ -10,6 +10,13 @@ import {
 import { PostsItem, PostsPage, PostsPaginatorOptions } from "./types/index.mjs";
 
 export class PostsPaginator {
+  public static async clean(outputDir: string) {
+    const dir = join(outputDir, this.basename);
+    if (await hasExisted(dir)) {
+      await deleteDir(dir);
+    }
+  }
+
   public static get basename() {
     return "pages";
   }
@@ -55,7 +62,7 @@ export class PostsPaginator {
 
   public async preprocess() {
     // Check if outputDir is existed.
-    await ensureDirExisted(this.outputDir);
+    await ensureDirExist(this.outputDir);
   }
 
   public process = async (posts: PostsItem[], prefix: string) => {

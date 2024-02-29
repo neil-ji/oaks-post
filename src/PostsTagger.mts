@@ -9,7 +9,7 @@ import {
 } from "./types/index.mjs";
 import {
   deleteDir,
-  ensureDirExisted,
+  ensureDirExist,
   hasExisted,
   processRawPostsItem,
   readByStream,
@@ -19,6 +19,13 @@ import { PostsPaginator } from "./PostsPaginator.mjs";
 import { PostsCollector } from "./PostsCollector.mjs";
 
 export class PostsTagger {
+  public static async clean(outputDir: string) {
+    const dir = join(outputDir, this.dirname);
+    if (await hasExisted(dir)) {
+      await deleteDir(dir);
+    }
+  }
+
   public static get basename() {
     return "tags";
   }
@@ -115,14 +122,18 @@ export class PostsTagger {
   }
 
   public preprocess() {
-    return ensureDirExisted(this.outputDir);
+    return ensureDirExist(this.outputDir);
   }
 
   public async save() {
     try {
       // Prepare to paginate
-      await this.paginator?.clean();
-      await this.paginator?.preprocess();
+      if (this.paginator) {
+        await this.paginator.clean();
+        await this.paginator.preprocess();
+      } else {
+        await PostsPaginator.clean(this.outputDir);
+      }
 
       // Convert data and paginate.
       const tagsEntry = Array.from(this.tagsMap.entries());
@@ -132,6 +143,7 @@ export class PostsTagger {
         if (sortImpl) {
           posts.sort(sortImpl);
         }
+
         // Paginate
         const prefix = `${PostsCollector.basename}_${tag}`;
         const postsPages = await this.paginator?.process(posts, prefix);
@@ -142,11 +154,11 @@ export class PostsTagger {
         };
       });
       const tags: PostTagsItem[] = await Promise.all(works);
-      const data: PostTagsCollection = {
+      const collection: PostTagsCollection = {
         version: this.currentVersion,
         tags,
       };
-      const json = JSON.stringify(data, null, 0);
+      const json = JSON.stringify(collection, null, 0);
 
       // Save
       await writeByStream(this.path, json);

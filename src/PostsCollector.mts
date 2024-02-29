@@ -1,7 +1,7 @@
 import { join } from "path";
 import {
   deleteDir,
-  ensureDirExisted,
+  ensureDirExist,
   hasExisted,
   processRawPostsItem,
   readByStream,
@@ -67,6 +67,10 @@ export class PostsCollector {
   }
 
   private async paginate() {
+    if (!this.paginator) {
+      await PostsPaginator.clean(this.outputDir);
+      return [];
+    }
     await this.paginator?.clean();
     await this.paginator?.preprocess();
     return (
@@ -75,7 +79,7 @@ export class PostsCollector {
   }
 
   public preprocess() {
-    return ensureDirExisted(this.outputDir);
+    return ensureDirExist(this.outputDir);
   }
 
   public async save(): Promise<void> {
