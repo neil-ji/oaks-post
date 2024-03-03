@@ -1,3 +1,5 @@
+# Note: Pausing to update this document due to lack of energy.
+
 # Introduction
 
 Documents / Documents

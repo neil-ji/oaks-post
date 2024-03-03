@@ -3,9 +3,7 @@
 文档 / Documents
 
 - [中文](/README.md)
-- [English](/README_EN.md)
-
-注意，`oaks-post`仅适用于 Nodejs 环境。
+- [~~English~~](/README_EN.md) have been discontinued (2/28/2024, v1.5.0) because of I don't have enough time to translate so many words. Sorry for that.
 
 `oaks-post`是什么？
 
@@ -28,7 +26,7 @@
 已实现：
 
 - Markdown to JSON：
-  - 文章详情：批量解析 markdown 文件，生成`post_[hash]_[basename].json`；
+  - 文章详情：批量解析 Markdown 文件，生成同名 JSON 文件；
   - 文章列表：生成`posts.json`，包含所有博客文章的基本信息；
   - 文章分类：
     - Tag ：更灵活，不体现层级关系；
@@ -37,6 +35,7 @@
   - 分页：将`posts.json`中的数据分割到若干 JSON 文件中，生成`posts_[page].json`；
   - 排序：对 posts 进行基于时间或自然语言的排序；
   - Front Matter：支持解析 Front Matter 元数据；
+- 命令行脚本：便于集成到类似 Github Actions 这种 CI/CD 工作流中，详见[命令行脚本](#命令行脚本)；
 - 性能优化：
   - 跳过已处理过的文件；
   - 借助分页功能可以实现按需加载；
@@ -50,7 +49,6 @@ TODO List：
 - Archive
 - 文章数据统计
 - 生成 RSS XML
-- 命令行脚本
 - 根据 Markdown 目录结构，自动生成 Category
 - 日志打印美化
 
@@ -64,10 +62,16 @@ TODO List：
 node -v
 ```
 
-然后进入指定项目目录，并执行以下指令安装`oaks-post`
+然后进入指定项目目录，并执行以下指令局部安装`oaks-post`
 
 ```bash
 npm install oaks-post
+```
+
+或者进行全局安装：
+
+```bash
+npm install oaks-post -g
 ```
 
 # 使用
@@ -76,9 +80,6 @@ npm install oaks-post
 
 ```js
 import { PostsManager, sortDateAscend } from "oaks-post";
-
-const yourMarkdownDirectory = "markdown";
-const yourJsonDirectory = "json";
 
 async function run() {
   const posts = new PostsManager({
@@ -117,7 +118,6 @@ async function run() {
 - `outputDir: string`：必填，解析规则同`inputDir`，它代表`oaks-post`输出的 json 文件的存放目录；
 - `baseUrl?: string`：可选，默认为空字符串`""`，它将作为 posts.json 中各 post 的 url 前缀；
 - `collection?: object`：可选，控制 `posts.json` 的解析及生成；
-  - `outputDir?: string`: 可选，控制 `posts.json` 的输出目录，默认为`${outputDir}_posts`；
   - `sort?: (a: PostItem, b: PostItem) => number`：可选，它决定了`posts.json`中 posts 数组的排列顺序，具体用法见[排序](#排序)；
   - `excerpt?: object`可选，用于截取摘要,具体用法见[博客摘要](#博客摘要)：
     - `rule: PostsExcerptRule`：必填，枚举类型，可选值如下：
@@ -129,14 +129,65 @@ async function run() {
     - `tag?: string`：可选，截取到指定标记，默认为`<!--more-->`.
   - `itemsPerPage?: number`：可选，指定该值将开启分页功能，默认不启用，具体用法见[分页](#分页)；
 - `tag?: object`：可选，控制`tags.json`的解析及生成；
-  - `outputDir, sort, excerpt, itemsPerPage` 同上；
+  - `sort, excerpt, itemsPerPage` 同上；
   - `propName?: string`：指定 Front Matter 中记录 Tag 信息的属性名，默认为`tag`；
 - `category?: object`：可选，控制`categories.json`的解析及生成；
-  - `outputDir, sort, excerpt, itemsPerPage` 同上；
   - `propName?: string`：指定 Front Matter 中记录 Category 信息的属性名，默认为`category`；
   - `rule?: PostsCategoriesAnalyzeRule`：可选，枚举类型，可选值如下：
     - `PostsCategoriesAnalyzeRule.FrontMatter`：默认值，从 Front Matter 中解析 Category 信息；
     - `PostsCategoriesAnalyzeRule.Disable`：忽略 Category 配置，不解析 Category，也不会生成任何文件；
+
+# 命令行脚本
+
+命令行脚本通过`posts.config.json`配置`PostsManager`，除以下配置项外，都与[配置](#配置)中的参数定义相同：
+
+- `sort`有以下四种取值，分别对应四个[内置排序函数](#排序)
+  - `"date ascend"`，时间升序；
+  - `"date descend"`，时间降序；
+  - `"lex ascend"`，自然语言升序；
+  - `"lex descend"`，自然语言降序；
+- `excerpt.rule`有以下四种取值，对应上文[excerpt.rule](#配置)的四种枚举：
+  - `"ByLines"`
+  - `"CustomTag"`
+  - `"NoContent"`
+  - `"FullContent"`
+- `category.rule`有两种取值，同上：
+  - `"FrontMatter"`
+  - `"Disable"`
+
+命令行脚本全部参数如下：
+
+- `--init, -i`：根据你的输入创建`posts.config.json`；
+- `--clean, -c`：执行前清空旧文件；
+- `--build, -b`：开始批处理 Markdown 文件；
+
+注意，局部安装和全局安装，应当使用不同方式调用命令行脚本，见下文。
+
+## 全局脚本
+
+通过以下指令调用`oaks-post`命令行脚本：
+
+```bash
+oaks-post -i -b
+```
+
+## 局部脚本
+
+在`package.json`的 `scripts` 项中添加一条指令：`"oaks-post": "oaks-post"`，如下：
+
+```json
+{
+  "scripts": {
+    "oaks-post": "oaks-post"
+  }
+}
+```
+
+然后通过以下指令调用`oaks-post`命令行脚本：
+
+```bash
+npm run oaks-post -i -b
+```
 
 # 博客详情
 
