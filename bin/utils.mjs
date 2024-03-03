@@ -8,8 +8,9 @@ import {
   sortLexOrderDescend,
 } from "../dist/index.mjs";
 import arg from "arg";
-import path from "path";
-import { readFile } from "fs/promises";
+import { readFile, writeFile, access } from "fs/promises";
+import { join } from "path";
+import readline from "node:readline/promises";
 
 function mapStrToSort(str) {
   switch (str) {
@@ -28,7 +29,7 @@ function mapStrToSort(str) {
 
 export async function createManager() {
   const data = await readFile(
-    path.join(process.cwd(), "posts.config.json"),
+    join(process.cwd(), "posts.config.json"),
     "utf-8"
   );
 
@@ -78,14 +79,57 @@ export function analyzeArguments() {
     {
       // Types
       "--clean": Boolean,
+      "--init": Boolean,
+      "--build": Boolean,
 
       // Aliases
       "-c": "--clean",
+      "-i": "--init",
+      "-b": "--build",
     },
     { argv: process.argv }
   );
 
-  const { ["--clean"]: clean } = args;
+  const { ["--clean"]: c, ["--init"]: i, ["--build"]: b } = args;
 
-  return { clean };
+  return { c, i, b };
+}
+
+async function ask(path) {
+  const template = {};
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    template.inputDir = await rl.question("inputDir: ");
+    template.outputDir = await rl.question("outputDir: ");
+    template.baseUrl = await rl.question("baseUrl: ");
+    const result = await rl.question("Print 'y/n' to continue: ");
+    rl.close();
+
+    if (result.toLowerCase() === "y") {
+      await writeFile(path, JSON.stringify(template, null, 2), "utf-8");
+      console.log("Successfully created posts.config.json");
+    } else {
+      process.exit();
+    }
+  } catch (error) {
+    console.error("Failed to read user input:", error);
+  }
+}
+
+export async function init() {
+  const path = join(process.cwd(), "posts.config.json");
+  try {
+    await access(path);
+    console.log("posts.config.json already exists.");
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      await ask(path);
+    } else {
+      console.error("Failed to create posts.config.json", error);
+    }
+  }
 }

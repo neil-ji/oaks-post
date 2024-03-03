@@ -192,6 +192,7 @@ export class PostsManager {
       this.classifier?.clean(),
     ];
     await Promise.all(works);
+    console.log("All remained files have been cleared.")
   }
 
   public async start() {

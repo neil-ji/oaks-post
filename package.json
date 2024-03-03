@@ -1,6 +1,6 @@
 {
   "name": "oaks-post",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "type": "module",
@@ -14,9 +14,7 @@
   },
   "description": "This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario",
   "bin": {
-    "init": "./bin/init.mjs",
-    "build": "./bin/build.mjs",
-    "clean": "./bin/clean.mjs"
+    "oaks-post": "./bin/index.mjs"
   },
   "scripts": {
     "build": "tsc",
