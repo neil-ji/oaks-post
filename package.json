@@ -1,6 +1,6 @@
 {
   "name": "oaks-post",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "type": "module",
@@ -13,14 +13,20 @@
     "url": "https://github.com/neil-ji/oaks-post/issues"
   },
   "description": "This is a pure ES module focused on 'Markdown file batch processing' in the static blog scenario",
+  "bin": {
+    "init": "./bin/init.mjs",
+    "build": "./bin/build.mjs",
+    "clean": "./bin/clean.mjs"
+  },
   "scripts": {
     "build": "tsc",
     "test": "node --experimental-modules dist/index.test.mjs",
-    "publish:npm": "npm run build && npm run test && npm publish"
+    "publish:npm": "npm run build && npm publish"
   },
   "author": "Neil Ji",
   "license": "Apache-2.0",
   "dependencies": {
+    "arg": "^5.0.2",
     "gray-matter": "^4.0.3",
     "murmurhash": "^2.0.1"
   },

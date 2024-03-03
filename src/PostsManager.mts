@@ -34,10 +34,10 @@ export class PostsManager {
     category,
   }: PostsManagerOptions) {
     // Validate input
-    if (inputDir === "") {
+    if (!inputDir) {
       throw new Error("Option 'inputDir' cannot be empty.");
     }
-    if (outputDir === "") {
+    if (!outputDir) {
       outputDir = `json_${generateUniqueHash()}`;
       console.warn(
         `Warning: You have not specified 'outputDir'. Therefore, it will be replaced with '${outputDir}'`
@@ -60,7 +60,7 @@ export class PostsManager {
       tag: "<!--more-->",
     };
 
-    // Collection instance
+    // Collector instance
     this.collector = new PostsCollector(
       {
         outputDir: join(normalizedOutputDir, PostsCollector.dirname),

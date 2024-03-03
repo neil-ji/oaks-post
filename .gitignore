@@ -131,6 +131,7 @@ dist
 
 # My test sources
 /test_*
+posts.config.json
 
 # vscode
 .vscode
