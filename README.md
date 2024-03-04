@@ -132,6 +132,7 @@ async function run() {
   - `sort, excerpt, itemsPerPage` 同上；
   - `propName?: string`：指定 Front Matter 中记录 Tag 信息的属性名，默认为`tag`；
 - `category?: object`：可选，控制`categories.json`的解析及生成；
+  - `sort, excerpt, itemsPerPage` 同上；
   - `propName?: string`：指定 Front Matter 中记录 Category 信息的属性名，默认为`category`；
   - `rule?: PostsCategoriesAnalyzeRule`：可选，枚举类型，可选值如下：
     - `PostsCategoriesAnalyzeRule.FrontMatter`：默认值，从 Front Matter 中解析 Category 信息；
@@ -191,12 +192,7 @@ npm run oaks-post -i -b
 
 # 博客详情
 
-每个 Markdown 文件都会生成对应的博客详情文件，命名格式为`post_[hash]_[basename].json`。
-
-1. hash：8 位 16 进制数表示的 hash 值，由 Markdown 文件名+文件内容生成，使用非加密哈希函数 MurmurHash3，执行速度较快；
-2. basename：Markdown 文件名；
-
-博客详情属性定义如下：
+每个 Markdown 文件都会生成同名 JSON 文件，属性定义如下：
 
 ```ts
 interface Post {
@@ -206,11 +202,7 @@ interface Post {
   /** Markdown content */
   content: string;
 }
-```
 
-其余相关类型定义如下：
-
-```ts
 interface PostFrontMatter {
   [key: string]: any;
 }
@@ -228,11 +220,7 @@ interface Posts {
   /** URLs of posts pages */
   postsPages?: string[];
 }
-```
 
-其余相关类型定义如下：
-
-```ts
 interface PostsItem extends ExcerptedPost {
   /** Unique identifier of a post */
   hash?: string;
@@ -284,17 +272,12 @@ interface PostsListBase {
 
   /** Enable paginate and specify max items count of per page */
   itemsPerPage?: number;
-
-  /** Specify output directory for posts and pages. Absolute or relative path are both worked */
-  outputDir?: string;
 }
 ```
 
 如果你在 Front Matter 中以`category: [root, sub category]`形式标识文章分类，则无需传入`propName`，否则你需要通过`propName`指定分类数组的键名。
 
 注意 category 书写规则是固定的：元素顺序表示嵌套层级，例如`category: [root, sub category 1, sub category 2]`，root 是根分类，sub category 1 是 root 的子分类，同理，sub category 2 是 sub category 1 的子分类，依此类推。
-
-启用 Category 分类解析后，如果未指定`manager.category.outputDir`属性，将会默认创建目录`${manager.outputDir}_categories`，用作相关文件的输出目录。
 
 分页、排序、摘要参见下文。
 
@@ -356,15 +339,10 @@ interface PostsListBase {
 
   /** Enable paginate and specify max items count of per page */
   itemsPerPage?: number;
-
-  /** Specify output directory for posts and pages. Absolute or relative path are both worked */
-  outputDir?: string;
 }
 ```
 
 如果你在 Front Matter 中以`tag: [js, es6, promise]`形式标识文章分类，则无需传入`propName`，否则你需要通过`propName`指定标签数组的键名，且书写 tag 无需考虑元素顺序，所有标签都是平级的。
-
-启用 Tag 分类解析后，如果未指定`manager.tag.outputDir`属性，将会默认创建目录`${manager.outputDir}_tags`，用作相关文件的输出目录。
 
 分页、排序、摘要参见下文。
 
@@ -387,7 +365,7 @@ interface Posts {
 
 # 博客摘要
 
-通过`excerptOptions`灵活控制博客摘要的截取规则，具体如下。
+通过`excerpt`灵活控制博客摘要的截取规则，具体如下。
 
 ## 按行数截取摘要
 
